@@ -1,5 +1,8 @@
-build
-env
-.vscode
 .idea
+.vscode
+dist
+build
 __pycache__
+.env
+venv
+env
