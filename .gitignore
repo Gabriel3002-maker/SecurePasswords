@@ -3,5 +3,3 @@ env
 .vscode
 .idea
 __pycache__
-.db
-dist
