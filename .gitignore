@@ -1,8 +1,37 @@
+# IDE
 .idea
 .vscode
-dist
-build
-__pycache__
+
+# Build artifacts
+build/
+dist/
+*.spec
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment variables
 .env
-venv
-env
+.env.local
+
+# Sensitive files - DO NOT COMMIT
+*.db
+*.key
+key.key
+passwords.db
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

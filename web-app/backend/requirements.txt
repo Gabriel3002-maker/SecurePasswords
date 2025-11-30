@@ -1,0 +1,34 @@
+# FastAPI y servidor
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Base de datos
+sqlalchemy==2.0.23
+alembic==1.12.1
+psycopg2-binary==2.9.9  # PostgreSQL (opcional)
+
+# Autenticación y seguridad
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.1
+cryptography==41.0.7
+
+# SSH
+paramiko==3.4.0
+
+# Templates
+jinja2==3.1.2
+
+# Utilidades
+python-dotenv==1.0.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+email-validator==2.1.0
+
+# WebSockets para SSH terminal
+websockets==12.0
+
+# Exportación
+pandas==2.1.3
+openpyxl==3.1.2

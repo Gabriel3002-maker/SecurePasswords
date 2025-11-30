@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: password_manager_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///./passwords.db
+      - SECRET_KEY=UoSU6DBqHAv6Nw-D0skHoHdWUfXdcsjuORq5TQngjvM
+      - ENCRYPTION_KEY=UKGhXPtqY7Py3fDzcmQIVNa0pnRQwujyD0JJ9-0yaVo
+      - APP_NAME="Gestor de Contraseñas"
+      - DEBUG=False
+      - ACCESS_TOKEN_EXPIRE_MINUTES=60
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/docs" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
