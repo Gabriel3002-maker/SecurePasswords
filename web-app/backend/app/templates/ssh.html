@@ -404,6 +404,31 @@
             };
         }
 
+        function disconnectSSH() {
+            if (websocket) {
+                websocket.close();
+            }
+            if (terminal) {
+                terminal.dispose();
+                terminal = null;
+            }
+
+            // Mostrar selector y ocultar terminal
+            document.getElementById('terminalContainer').classList.add('hidden');
+            document.getElementById('credentialSelector').classList.remove('hidden');
+
+            currentSessionId = null;
+            showToast('Desconectado del servidor SSH', 'success');
+        }
+
+        async function logout() {
+            await fetch(`${API_URL}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            window.location.href = '/';
+        }
+
         // Cargar credenciales y verificar auto-conexión al cargar la página
         document.addEventListener('DOMContentLoaded', () => {
             loadCredentials();
