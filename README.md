@@ -1,6 +1,6 @@
 # 🔐 Gestor de Contraseñas con Tkinter
 
-Aplicación de escritorio construida en Python usando Tkinter y SQLite para gestionar contraseñas de manera local y segura. Permite iniciar sesión, guardar múltiples accesos con detalles personalizados, cambiar el tema (oscuro/claro), exportar a CSV, y cerrar sesión.
+Aplicación  construida en Python SQLite para gestionar contraseñas de manera local y segura. Permite iniciar sesión, guardar múltiples accesos con detalles personalizados,  exportar a CSV, y cerrar sesión.
 
 ---
 
@@ -8,9 +8,7 @@ Aplicación de escritorio construida en Python usando Tkinter y SQLite para gest
 
 -   Registro e inicio de sesión con SQLite
 -   CRUD de accesos (host, usuario, contraseña, token, puerto, comentario)
--   Interfaz gráfica simple con Tkinter
--   Cambio de tema dinámico (claro/oscuro)
--   Exportación de datos a CSV
+-   Exportación de datos a xlsx
 -   Listado por comentarios para mejor identificación
 -   Opción para cerrar sesión y volver a login
 
@@ -18,9 +16,8 @@ Aplicación de escritorio construida en Python usando Tkinter y SQLite para gest
 
 ## 🛠️ Requisitos
 
--   Python 3.10+
--   Tkinter (ya viene con Python)
--   pip (para instalar dependencias)
+-   Dockerfile
+-   Docker-compose
 
 ---
 
@@ -31,25 +28,23 @@ Aplicación de escritorio construida en Python usando Tkinter y SQLite para gest
     ```bash
     git clone https://github.com/tuusuario/gestor-passwords.git
     cd gestor-passwords
+    cd web-app
+
 
     ```
 
-2. Generar la version dist
+2. Ahora necesitar levantar el contenedor
 
     ```bash
 
-    pyinstaller --name "GestorPasswords" --onefile --noconsole \
-    --add-data "config/colors.py:config" \
-    main.py
+    docker compose up -d
     ```
-
-3. No te preocupes en el caso de que no puedas generar el dist en el repo tienes un carpeta dist solo descarga el proyecto y copia el dist en ruta que desea y ejecuta
 
 ## 📦 Ejecución
 
-1. Al principio te mostrara un login solo registrate ya que sera tu contraseña maestra:
+1. Luego de levantar correctamente el contendor accede a tu ip:9000:
 
-2. Puedes disfrutralo :
+2. Termina la configuración y pruebalo:
 
 ## 📦 Mejoras y Contribuciones
 
