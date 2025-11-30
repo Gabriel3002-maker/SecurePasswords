@@ -130,7 +130,7 @@ def on_startup():
     
     logger.info(f"🚀 {settings.app_name} iniciado correctamente")
     logger.info(f"📂 Directorio de trabajo: {os.getcwd()}")
-    logger.info(f"🌐 Accede a: http://localhost:8000")
+    logger.info(f"🌐 Accede a: http://localhost:9000")
 
 # Ruta de Setup
 @app.get("/setup")

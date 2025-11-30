@@ -24,7 +24,7 @@ COPY app ./app
 RUN mkdir -p /app/data
 
 # Expose port
-EXPOSE 8000
+EXPOSE 9000
 
 # Run command
-CMD ["uvicorn", "main:app", "--app-dir", "app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["uvicorn", "main:app", "--app-dir", "app", "--host", "0.0.0.0", "--port", "9000", "--workers", "4"]

@@ -8,4 +8,4 @@ source venv/bin/activate
 
 # Iniciar aplicación
 echo "🚀 Iniciando Gestor de Contraseñas..."
-uvicorn main:app --app-dir app --reload --host 0.0.0.0 --port 8000
+uvicorn main:app --app-dir app --reload --host 0.0.0.0 --port 9000
