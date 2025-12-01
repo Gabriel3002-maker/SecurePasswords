@@ -1,6 +1,6 @@
 # 🔐 Gestor de Contraseñas 
 
-Aplicación  construida en Python , SQLite para gestionar contraseñas de manera local y segura. Permite iniciar sesión, guardar múltiples accesos con detalles personalizados,  exportar a CSV, y cerrar sesión.
+Aplicación  construida en Python , SQLite para gestionar contraseñas de manera local y segura. Permite iniciar sesión, guardar múltiples accesos con detalles personalizados,  exportar a Excel, y cerrar sesión.
 
 ---
 
