@@ -22,7 +22,7 @@ settings = get_settings()
 app = FastAPI(
     title=settings.app_name,
     description="Gestor de contraseñas web con SSH integrado y control de roles",
-    version="1.0.0"
+    version="1.0.2"
 )
 
 # CORS (permitir requests desde frontend)

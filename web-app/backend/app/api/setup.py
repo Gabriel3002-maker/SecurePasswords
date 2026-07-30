@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from passlib.context import CryptContext
 from models.models import Base, User, Organization, UserRole
+from core.security import validate_password_requirements
 
 router = APIRouter(tags=["Setup"])
 
@@ -24,6 +25,13 @@ def get_password_hash(password):
 async def run_setup(data: SetupRequest):
     """Ejecutar configuración inicial"""
     
+    is_valid, message = validate_password_requirements(data.admin_password)
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=message
+        )
+
     # Validar nombre de DB
     db_name = data.db_name.strip()
     if not db_name.endswith(".db"):
