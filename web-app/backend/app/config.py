@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     class Config:
         env_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
         env_file_encoding = "utf-8"
+        # ALLOWED_ORIGINS / DEBUG se leen con os.getenv en main.py, no son campos de Settings
+        extra = "ignore"
 
     def validate_post_setup(self) -> None:
         if self.secret_key in ("setup_mode_key", "your-secret-key-here-change-in-production", ""):

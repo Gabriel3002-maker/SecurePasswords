@@ -1,189 +1,161 @@
 # Gestor de Contraseñas Web
 
-Aplicación web moderna para gestión de contraseñas con terminal SSH integrado y control de roles.
+Aplicación web para gestión de contraseñas con terminal SSH integrado, bot de Telegram y recuperación por código.
 
-## 🚀 Características
+## Características
 
-- ✅ **Autenticación JWT** - Login seguro con tokens
-- ✅ **Multi-usuario** - Sistema de roles (Admin/Usuario)
-- ✅ **Gestión de contraseñas** - CRUD completo con encriptación
-- ✅ **Terminal SSH integrado** - Conecta directamente a servidores
-- ✅ **Control de permisos** - Asigna acceso granular a credenciales
-- ✅ **Interfaz moderna** - UI responsive con Tailwind CSS
+- ✅ **Asistente de configuración** — wizard de 2 pasos con idioma es/en/pt
+- ✅ **Contraseña maestra** — hasheada con bcrypt, recuperable por Telegram
+- ✅ **Autenticación JWT** — tokens con roles Admin/Operador
+- ✅ **Credenciales** — CRUD con encriptación Fernet
+- ✅ **Terminal SSH** — conexión interactiva vía WebSocket
+- ✅ **Bot Telegram** — avisos de login y recuperación de maestra
+- ✅ **i18n** — español, inglés, portugués con traducción en vivo
+- ✅ **Docker** — despliegue con un solo comando
 
-## 📋 Requisitos
+## Requisitos
 
-- Python 3.8+
-- pip
+- Python 3.10+ (sin Docker)
+- Docker + Docker Compose (recomendado)
+- Bot de Telegram (opcional)
 
-## 🛠️ Instalación
+## Instalación con Docker
 
-1. **Navegar al directorio del backend:**
 ```bash
-cd web-app/backend
+docker compose up -d --build
 ```
 
-2. **Crear entorno virtual:**
-```bash
-python -m venv venv
-source venv/bin/activate  
-```
+Abre **http://localhost:9000**. El asistente de configuración guía los primeros pasos.
 
-3. **Instalar dependencias:**
+### Variables de entorno (`backend/.env`)
+
+| Variable | Requerido | Descripción |
+|----------|-----------|-------------|
+| `SECRET_KEY` | Sí | Clave secreta para JWT |
+| `ENCRYPTION_KEY` | Sí | Clave para encriptar credenciales |
+| `DATABASE_URL` | Sí | Ruta de la BD SQLite |
+| `TELEGRAM_BOT_TOKEN` | No | Token del bot (también configurable en el wizard) |
+
+## Instalación sin Docker
+
 ```bash
+cd backend
+python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env   # editar variables
+cd app && python main.py
 ```
 
-4. **Configurar variables de entorno:**
-```bash
-cp .env.example .env
-```
+## Asistente de configuración
 
-Edita `.env` y configura:
-- `SECRET_KEY`: Clave secreta para JWT (genera una aleatoria)
-- `ENCRYPTION_KEY`: Clave para encriptar contraseñas (genera una aleatoria)
+Al acceder por primera vez, el wizard guía en 2 pasos:
 
-Para generar claves seguras:
-```python
-import secrets
-print(secrets.token_urlsafe(32))
-```
+**Paso 1** — Idioma (es/en/pt) y contraseña maestra
+**Paso 2** — Usuario administrador + token de Telegram (opcional)
 
-## ▶️ Ejecutar la aplicación
+## Bot de Telegram
 
-```bash
-cd app
-python main.py
-```
+1. Crea el bot en [@BotFather](https://t.me/BotFather) y copia el token
+2. Configúralo en el wizard o en `TELEGRAM_BOT_TOKEN` del `.env`
+3. En Telegram, busca tu bot y escribe `/start` para vincular el chat
 
-O con uvicorn directamente:
-```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
+| Función | Descripción |
+|---------|-------------|
+| Avisos de sesión | Notificación con correo, hora e IP en cada login |
+| Recuperación maestra | Código de 6 caracteres por Telegram (válido 10 min) |
 
-La aplicación estará disponible en: **http://localhost:8000**
+La página de recuperación está en `/recovery` (enlace visible en el login).
 
-## 📖 Uso
-
-### 1. Registro
-- Accede a http://localhost:8000
-- Click en "Registrarse"
-- Ingresa tu correo y contraseña
-- El primer usuario de una organización será Admin automáticamente
-
-### 2. Login
-- Ingresa tu correo y contraseña
-- Serás redirigido al dashboard
-
-### 3. Gestionar Contraseñas
-- Click en "Contraseñas" en el menú lateral
-- Click en "Nueva Contraseña" para agregar credenciales
-- Completa: Host, Usuario, Contraseña, Puerto (opcional), Comentario
-- Marca "Compartir" si quieres que otros usuarios la vean
-
-### 4. Conectar SSH
-- Click en "Terminal SSH"
-- Selecciona una credencial
-- Se abrirá un terminal interactivo conectado al servidor
-
-### 5. Administración (Solo Admin)
-- Click en "Administración"
-- Gestiona usuarios y permisos
-
-## 🔐 Seguridad
-
-- Las contraseñas de usuarios se hashean con bcrypt
-- Las credenciales guardadas se encriptan con Fernet (symmetric encryption)
-- Autenticación con JWT tokens
-- HTTPS recomendado en producción
-
-## 📁 Estructura del Proyecto
+## Estructura
 
 ```
-web-app/backend/
-├── app/
-│   ├── api/              # Endpoints de la API
-│   │   ├── auth.py       # Login/Register
-│   │   ├── credentials.py # Gestión de contraseñas
-│   │   ├── ssh.py        # Conexiones SSH
-│   │   └── deps.py       # Dependencies
-│   ├── core/             # Utilidades core
-│   │   ├── security.py   # JWT, hashing
-│   │   ├── encryption.py # Encriptación
-│   │   └── ssh_manager.py # SSH handler
-│   ├── models/           # Modelos de base de datos
-│   │   └── models.py
-│   ├── schemas/          # Schemas Pydantic
-│   │   └── schemas.py
-│   ├── templates/        # Templates HTML
-│   │   ├── login.html
-│   │   ├── dashboard.html
-│   │   ├── passwords.html
-│   │   ├── ssh.html
-│   │   └── admin.html
-│   ├── static/           # Archivos estáticos
-│   ├── config.py         # Configuración
-│   ├── database.py       # Setup de DB
-│   └── main.py           # App principal
-├── requirements.txt
-└── .env.example
+backend/app/
+├── api/
+│   ├── auth.py           # Login / registro
+│   ├── credentials.py    # CRUD credenciales
+│   ├── ssh.py            # SSH + terminal WebSocket
+│   ├── admin.py          # Gestión de usuarios (admin)
+│   ├── setup.py          # Asistente de configuración
+│   └── recovery.py       # Recuperación de maestra
+├── core/
+│   ├── security.py       # JWT, hashing bcrypt
+│   ├── encryption.py     # Encriptación Fernet
+│   ├── ssh_manager.py    # Handler SSH
+│   ├── i18n.py           # Traducciones es/en/pt
+│   └── telegram.py       # Bot Telegram (polling)
+├── models/
+│   └── models.py         # User, Credential, SystemSetting, RecoveryCode
+├── services/
+│   └── setup_service.py  # Lógica del wizard
+├── templates/
+│   ├── layout.html       # Layout base + i18n client-side
+│   ├── login.html
+│   ├── setup.html        # Asistente de configuración
+│   ├── recovery.html     # Recuperación de maestra
+│   ├── dashboard.html
+│   ├── passwords.html
+│   ├── ssh.html
+│   └── admin.html
+├── main.py
+├── config.py
+└── database.py
 ```
 
-## 🌐 API Endpoints
+## Endpoints de la API
 
 ### Autenticación
-- `POST /api/auth/register` - Registrar usuario
-- `POST /api/auth/login` - Iniciar sesión
+- `POST /api/auth/login` — Iniciar sesión
+- `POST /api/auth/register` — Registrar usuario (solo admin)
+
+### Configuración
+- `POST /api/setup` — Configuración inicial (asistente)
 
 ### Credenciales
-- `GET /api/credentials/` - Listar credenciales
-- `POST /api/credentials/` - Crear credencial
-- `GET /api/credentials/{id}` - Ver credencial (con contraseña)
-- `PUT /api/credentials/{id}` - Actualizar credencial
-- `DELETE /api/credentials/{id}` - Eliminar credencial
+- `GET /api/credentials/` — Listar credenciales
+- `POST /api/credentials/` — Crear credencial
+- `GET /api/credentials/{id}` — Ver credencial (con contraseña encriptada)
+- `PUT /api/credentials/{id}` — Actualizar
+- `DELETE /api/credentials/{id}` — Eliminar
 
 ### Permisos (Admin)
-- `POST /api/credentials/{id}/permissions` - Asignar permiso
-- `GET /api/credentials/{id}/permissions` - Listar permisos
-- `DELETE /api/credentials/{id}/permissions/{user_id}` - Revocar permiso
+- `POST /api/credentials/{id}/permissions` — Asignar permiso
+- `GET /api/credentials/{id}/permissions` — Listar permisos
+- `DELETE /api/credentials/{id}/permissions/{user_id}` — Revocar
 
 ### SSH
-- `POST /api/ssh/connect` - Iniciar conexión SSH
-- `WS /api/ssh/terminal/{session_id}` - WebSocket terminal
-- `POST /api/ssh/disconnect/{session_id}` - Cerrar sesión
+- `POST /api/ssh/connect` — Iniciar conexión SSH
+- `WS /api/ssh/terminal/{session_id}` — Terminal WebSocket
+- `POST /api/ssh/disconnect/{session_id}` — Cerrar sesión
 
-## 🐳 Docker (Opcional)
+### Recuperación
+- `POST /api/recovery/request` — Solicitar código por Telegram
+- `POST /api/recovery/confirm` — Restablecer maestra con código
 
-```dockerfile
-# Dockerfile
-FROM python:3.11-slim
+### Utilidades
+- `GET /api/i18n/translations?lang=es` — Traducciones
+- `GET /health` — Health check
 
-WORKDIR /app
+## Seguridad
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+- Contraseñas de usuario hasheadas con bcrypt
+- Credenciales encriptadas con Fernet (AES-CBC)
+- JWT con expiración configurable
+- CSRF protection en POST/PUT/DELETE
+- Terminal SSH con `websocket.accept()` y limpieza de recursos
+- Recuperación de maestra solo por Telegram vinculado
+- Lease de polling para evitar duplicidad en múltiples workers
 
-COPY app/ ./app/
-
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
+## Tests
 
 ```bash
-docker build -t password-manager .
-docker run -p 8000:8000 -e SECRET_KEY=your-key -e ENCRYPTION_KEY=your-key password-manager
+cd web-app/backend
+python -m pytest tests/ -q
 ```
 
-## 📝 Notas
+## Versión
 
-- Por defecto usa SQLite (archivo `passwords.db`)
-- Para PostgreSQL, cambia `DATABASE_URL` en `.env`
-- En producción, usa HTTPS y configura CORS apropiadamente
-- El terminal SSH requiere acceso de red a los servidores remotos
+**v1.0.3** — Setup wizard i18n, Telegram bot, recuperación de maestra, terminal SSH.
 
-## 🤝 Contribuir
+## Licencia
 
-Este es un proyecto de código abierto. ¡Las contribuciones son bienvenidas!
-
-## 📄 Licencia
-
-MIT License
+MIT

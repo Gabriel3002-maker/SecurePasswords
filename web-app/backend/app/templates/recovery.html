@@ -1,0 +1,130 @@
+{% extends "layout.html" %}
+{% block title %}{{ t('recovery.title') }}{% endblock %}
+
+{% block full_content %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh; display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-sans);
+    }
+    .recovery-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        padding: 2.5rem; border-radius: 1.5rem;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        width: 100%; max-width: 480px;
+        animation: slide-up 0.5s ease-out;
+    }
+    [data-theme="dark"] .recovery-card {
+        background: rgba(30,30,46,0.95);
+        border: 1px solid rgba(69,71,90,0.5);
+    }
+    .recovery-header { text-align: center; margin-bottom: 1.5rem; }
+    .recovery-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+    .recovery-title { font-size: 1.5rem; font-weight: 800; color: var(--color-gray-900); margin: 0; }
+    .recovery-subtitle { color: var(--color-gray-600); margin-top: 0.5rem; font-size: 0.9rem; }
+    .section-title { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-gray-500); font-weight: 700; margin: 1.5rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--color-gray-200); }
+    .form-group { margin-bottom: 1rem; }
+    .form-label { display: block; font-weight: 600; color: var(--color-gray-700); margin-bottom: 0.5rem; font-size: 0.9rem; }
+    .form-input { width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--color-gray-200); border-radius: var(--radius-lg); font-size: 1rem; transition: all 0.2s; box-sizing: border-box; background: var(--color-white); }
+    .form-input:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    .btn-primary { width: 100%; padding: 0.9rem; background: var(--gradient-primary); color: white; border: none; border-radius: var(--radius-lg); font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s; }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-secondary { width: 100%; padding: 0.9rem; background: transparent; color: var(--color-gray-600); border: 2px solid var(--color-gray-200); border-radius: var(--radius-lg); font-weight: 600; cursor: pointer; margin-top: 1rem; }
+    .btn-secondary:hover { border-color: var(--color-gray-400); }
+    .status { margin-top: 0.75rem; font-size: 0.9rem; font-weight: 600; text-align: center; min-height: 1.2rem; }
+    .status.success { color: #16a34a; }
+    .status.error { color: #dc2626; }
+    .code-input { letter-spacing: 0.5em; text-align: center; text-transform: uppercase; font-weight: 700; }
+</style>
+
+<div class="recovery-card">
+    <div class="recovery-header">
+        <span class="recovery-icon">🔑</span>
+        <h1 class="recovery-title" data-i18n="recovery.title">Recuperar Contraseña Maestra</h1>
+        <p class="recovery-subtitle" data-i18n="recovery.subtitle">Si perdiste la contraseña maestra, solicita un código por Telegram para restablecerla.</p>
+    </div>
+
+    <div class="section-title" data-i18n="recovery.request_title">Solicitar código</div>
+    <button type="button" id="requestBtn" class="btn-primary" data-i18n="recovery.request_btn" onclick="requestCode()">Enviar código por Telegram</button>
+    <div id="requestStatus" class="status"></div>
+
+    <div class="section-title" data-i18n="recovery.confirm_title">Restablecer contraseña maestra</div>
+    <form id="confirmForm" onsubmit="confirmCode(event)">
+        <div class="form-group">
+            <label class="form-label" data-i18n="recovery.code_label" for="codeInput">Código de recuperación</label>
+            <input type="text" id="codeInput" class="form-input code-input" data-i18n-placeholder="recovery.code_placeholder" placeholder="XXXXXX" maxlength="6" required>
+        </div>
+        <div class="form-group">
+            <label class="form-label" data-i18n="recovery.new_master_label" for="newMasterInput">Nueva contraseña maestra</label>
+            <input type="password" id="newMasterInput" class="form-input" placeholder="••••••••" minlength="8" required>
+        </div>
+        <button type="submit" class="btn-primary" data-i18n="recovery.confirm_btn">Restablecer contraseña</button>
+        <div id="confirmStatus" class="status"></div>
+    </form>
+
+    <button type="button" class="btn-secondary" data-i18n="recovery.back" onclick="window.location.href='/'">Volver al inicio</button>
+</div>
+
+<script>
+    function setStatus(elId, message, type) {
+        const el = document.getElementById(elId);
+        el.textContent = message;
+        el.className = 'status ' + (type || '');
+    }
+
+    async function requestCode() {
+        const btn = document.getElementById('requestBtn');
+        btn.disabled = true;
+        setStatus('requestStatus', '', '');
+        try {
+            const response = await fetch('/api/recovery/request', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken()},
+                body: JSON.stringify({})
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setStatus('requestStatus', data.message || t('recovery.sent'), 'success');
+            } else {
+                setStatus('requestStatus', (data.detail || t('recovery.connection_error')), 'error');
+            }
+        } catch (error) {
+            setStatus('requestStatus', t('recovery.connection_error'), 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function confirmCode(event) {
+        event.preventDefault();
+        const btn = event.target.querySelector('button[type="submit"]');
+        btn.disabled = true;
+        setStatus('confirmStatus', '', '');
+        try {
+            const response = await fetch('/api/recovery/confirm', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken()},
+                body: JSON.stringify({
+                    code: document.getElementById('codeInput').value,
+                    new_master_password: document.getElementById('newMasterInput').value
+                })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setStatus('confirmStatus', data.message || t('recovery.success'), 'success');
+            } else {
+                setStatus('confirmStatus', (data.detail || t('recovery.connection_error')), 'error');
+            }
+        } catch (error) {
+            setStatus('confirmStatus', t('recovery.connection_error'), 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+</script>
+{% endblock %}

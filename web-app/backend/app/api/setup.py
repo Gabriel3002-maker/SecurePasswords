@@ -11,6 +11,8 @@ class SetupRequest(BaseModel):
     admin_email: EmailStr
     admin_password: str
     language: str | None = None
+    master_password: str | None = None
+    telegram_bot_token: str | None = None
 
 @router.post("/setup")
 async def run_setup_route(request: Request, data: SetupRequest):
@@ -22,8 +24,13 @@ async def run_setup_route(request: Request, data: SetupRequest):
             admin_email=str(data.admin_email),
             admin_password=data.admin_password,
             language=data.language,
+            master_password=data.master_password,
+            telegram_bot_token=data.telegram_bot_token,
         )
         response = {"message": message}
+        if data.telegram_bot_token:
+            from core import telegram as telegram_service
+            telegram_service.start_polling()
         if data.language:
             response_headers = {"set-cookie": f"app_lang={data.language}; Path=/; HttpOnly=False; SameSite=Lax"}
             return JSONResponse(content=response, headers=response_headers)

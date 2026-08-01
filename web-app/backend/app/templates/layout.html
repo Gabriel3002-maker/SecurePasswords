@@ -71,8 +71,8 @@
     <script>
         const API_URL = `${window.location.protocol}//${window.location.host}/api`;
 
-        const I18N_CURRENT_LANG = '{{ locale }}';
-        const I18N_TRANSLATIONS = {{ translations | tojson }};
+        window.I18N_CURRENT_LANG = '{{ locale }}';
+        window.I18N_TRANSLATIONS = {{ translations | tojson }};
 
         function getAppLanguage() {
             return localStorage.getItem('app-lang') || document.documentElement.getAttribute('data-lang') || '{{ locale }}';
@@ -144,7 +144,9 @@
             localStorage.setItem('app-lang', lang);
             document.cookie = `app_lang=${lang}; path=/; max-age=31536000`;
             document.documentElement.lang = lang;
+            const request = (window.__langRequestSeq = (window.__langRequestSeq || 0) + 1);
             const apply = () => {
+                if (window.__langRequestSeq !== request) return;
                 applyTranslations();
                 const selects = document.querySelectorAll('.lang-select, #langSelectTop, select[name="language"]');
                 selects.forEach((s) => { s.value = lang; });
@@ -154,6 +156,7 @@
             fetch(`/api/i18n/translations?lang=${lang}`)
                 .then((r) => r.json())
                 .then((data) => {
+                    if (window.__langRequestSeq !== request) return;
                     window.I18N_TRANSLATIONS = data.translations;
                     window.I18N_CURRENT_LANG = data.locale;
                     apply();

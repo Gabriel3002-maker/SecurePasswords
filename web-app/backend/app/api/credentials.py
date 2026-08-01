@@ -44,7 +44,10 @@ def user_can_view_credential(user: User, credential: Credential, db: Session) ->
 
 
 def _get_user_permissions(user: User, credential: Credential, db: Session) -> dict:
-    if _has_permission(user, credential, db, "can_view"):
+    # Admins y dueños de la credencial siempre tienen acceso completo
+    if user.role == UserRole.ADMIN and user.organization_id == credential.organization_id:
+        return {"can_view": True, "can_edit": True, "can_delete": True, "can_connect_ssh": True}
+    if credential.created_by == user.id:
         return {"can_view": True, "can_edit": True, "can_delete": True, "can_connect_ssh": True}
     permission = db.query(CredentialPermission).filter(and_(
         CredentialPermission.credential_id == credential.id,
@@ -114,9 +117,10 @@ def list_credentials(
             q = q.filter(Credential.is_favorite == True)
         results = q.order_by(Credential.updated_at.desc()).all()
     
-    # Agregar nombres de etiquetas
+    # Agregar nombres de etiquetas y permisos del usuario actual
     for c in results:
         c.tags = [t.name for t in c.tags_rel]
+        c.user_permissions = _get_user_permissions(current_user, c, db)
     return results
 
 
@@ -601,6 +605,7 @@ def grant_permission(
     )
     
     db.add(permission)
+    credential.is_shared = True
     db.commit()
     db.refresh(permission)
     
