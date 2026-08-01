@@ -554,6 +554,17 @@
   background: rgba(30, 30, 46, 0.95);
 }
 
+.lang-select {
+  background: var(--color-white);
+  border: 2px solid var(--color-gray-300);
+  border-radius: var(--radius-lg);
+  padding: 0.4rem 0.6rem;
+  font-weight: 600;
+  color: var(--color-gray-700);
+  font-family: var(--font-sans);
+  cursor: pointer;
+}
+
 .theme-btn {
   background: none;
   border: 2px solid var(--color-gray-300);

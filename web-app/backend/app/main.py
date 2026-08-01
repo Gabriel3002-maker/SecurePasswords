@@ -8,6 +8,7 @@ from database import init_db, SessionLocal
 from api import auth, credentials, ssh, admin
 from config import get_settings
 from core.security import decode_token
+from core.i18n import normalize_locale, get_text, get_translation_map
 from models.models import User, UserRole
 from sqlalchemy.orm import Session
 import os
@@ -164,11 +165,21 @@ def on_startup():
 def _template_params(request: Request, user: dict | None = None, active_page: str = "") -> dict:
     """Construir contexto común para todas las plantillas."""
     csrf = request.cookies.get("csrf_token", "")
+    lang_cookie = request.cookies.get("app_lang")
+    locale = normalize_locale(lang_cookie or request.headers.get("accept-language"))
+    translations = get_translation_map(locale)
+
+    def _t(key: str, **kwargs) -> str:
+        return get_text(locale, key, **kwargs)
+
     return {
         "request": request,
         "user": user,
         "active_page": active_page,
         "csrf_token": csrf,
+        "locale": locale,
+        "translations": translations,
+        "t": _t,
     }
 
 def _require_auth(request: Request) -> dict | None:
@@ -221,6 +232,11 @@ async def admin(request: Request):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.get("/api/i18n/translations")
+async def i18n_translations(lang: Optional[str] = None):
+    locale = normalize_locale(lang or "es")
+    return {"locale": locale, "translations": get_translation_map(locale)}
 
 if __name__ == "__main__":
     import uvicorn

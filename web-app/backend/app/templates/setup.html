@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Configuración Inicial{% endblock %}
+{% block title %}{{ t('setup.title') }}{% endblock %}
 
 {% block full_content %}
 <style>
@@ -40,35 +40,45 @@
 <div class="setup-card">
     <div class="setup-header">
         <span class="setup-icon">🧙‍♂️</span>
-        <h1 class="setup-title">Configuración Inicial</h1>
-        <p class="setup-subtitle">Bienvenido al Gestor de Contraseñas</p>
+        <h1 class="setup-title" data-i18n="setup.title">Configuración Inicial</h1>
+        <p class="setup-subtitle" data-i18n="setup.subtitle">Bienvenido al Gestor de Contraseñas</p>
     </div>
 
     <form id="setupForm" onsubmit="handleSetup(event)">
-        <div class="section-title">Base de Datos</div>
+        <div class="section-title" data-i18n="setup.database_section">Base de Datos</div>
         <div class="form-group">
-            <label class="form-label">Nombre de la Base de Datos</label>
-            <input type="text" name="db_name" class="form-input" placeholder="ej: passwords.db" value="passwords.db" required>
+            <label class="form-label" data-i18n="setup.db_name_label">Nombre de la Base de Datos</label>
+            <input type="text" name="db_name" class="form-input" data-i18n-placeholder="setup.db_name_placeholder" placeholder="ej: passwords.db" value="passwords.db" required>
         </div>
 
-        <div class="section-title">Administrador</div>
+        <div class="section-title" data-i18n="setup.language_section">Idioma</div>
         <div class="form-group">
-            <label class="form-label">Nombre Completo</label>
-            <input type="text" name="admin_name" class="form-input" placeholder="Tu nombre" required>
+            <label class="form-label" data-i18n="setup.language_label">Selecciona tu idioma</label>
+            <select name="language" class="form-input" onchange="changeLanguage(this.value)">
+                <option value="es">Español</option>
+                <option value="en">English</option>
+                <option value="pt">Português</option>
+            </select>
+        </div>
+
+        <div class="section-title" data-i18n="setup.admin_section">Administrador</div>
+        <div class="form-group">
+            <label class="form-label" data-i18n="setup.full_name_label">Nombre Completo</label>
+            <input type="text" name="admin_name" class="form-input" data-i18n-placeholder="setup.full_name_placeholder" placeholder="Tu nombre" required>
         </div>
         <div class="form-group">
-            <label class="form-label">Correo Electrónico</label>
-            <input type="email" name="admin_email" class="form-input" placeholder="admin@ejemplo.com" required>
+            <label class="form-label" data-i18n="setup.email_label">Correo Electrónico</label>
+            <input type="email" name="admin_email" class="form-input" data-i18n-placeholder="setup.email_placeholder" placeholder="admin@ejemplo.com" required>
         </div>
         <div class="form-group">
-            <label class="form-label">Contraseña</label>
-            <input type="password" name="admin_password" class="form-input" placeholder="••••••••" required minlength="8" oninput="updateStrength(this)">
+            <label class="form-label" data-i18n="setup.password_label">Contraseña</label>
+            <input type="password" name="admin_password" class="form-input" data-i18n-placeholder="setup.password_placeholder" placeholder="••••••••" required minlength="8" oninput="updateStrength(this)">
             <div class="password-strength"><div id="strengthBar" class="password-strength-bar"></div></div>
             <span id="strengthText" class="password-strength-text"></span>
-            <span class="hint">Usa al menos 8 caracteres, mayúsculas, minúsculas, números y un símbolo.</span>
+            <span class="hint" data-i18n="setup.password_hint">Usa al menos 8 caracteres, mayúsculas, minúsculas, números y un símbolo.</span>
         </div>
 
-        <button type="submit" class="btn-primary">Guardar y Continuar</button>
+        <button type="submit" class="btn-primary" data-i18n="setup.submit">Guardar y Continuar</button>
     </form>
 </div>
 
@@ -85,7 +95,7 @@
         if (/\d/.test(pwd)) score++;
         if (/[^A-Za-z0-9]/.test(pwd)) score++;
         const colors = ['#ef4444','#ef4444','#f59e0b','#f59e0b','#22c55e','#22c55e'];
-        const labels = ['','Muy débil','Débil','Regular','Fuerte','Muy fuerte'];
+        const labels = ['', t('strength.very_weak'), t('strength.weak'), t('strength.regular'), t('strength.strong'), t('strength.very_strong')];
         bar.style.width = (score / 6 * 100) + '%';
         bar.style.background = colors[score] || '#22c55e';
         text.textContent = labels[score] || '';
@@ -98,9 +108,12 @@
         const btn = form.querySelector('button');
         const originalText = btn.textContent;
         btn.disabled = true;
-        btn.textContent = 'Configurando...';
+        btn.textContent = t('setup.configuring');
 
         const data = Object.fromEntries(new FormData(form).entries());
+        const lang = data.language || 'es';
+        localStorage.setItem('app-lang', lang);
+        document.documentElement.setAttribute('data-lang', lang);
         try {
             const response = await fetch('/api/setup', {
                 method: 'POST',
@@ -108,16 +121,16 @@
                 body: JSON.stringify(data)
             });
             if (response.ok) {
-                btn.textContent = '¡Listo! Redirigiendo...';
+                btn.textContent = t('setup.done');
                 setTimeout(() => window.location.href = '/', 1500);
             } else {
                 const error = await response.json();
-                alert('Error: ' + (error.detail || 'Error en la configuración'));
+                alert(t('setup.error') + (error.detail || t('setup.connection_error')));
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
         } catch (error) {
-            alert('Error de conexión');
+            alert(t('setup.connection_error'));
             btn.disabled = false;
             btn.textContent = originalText;
         }
