@@ -3,7 +3,7 @@ from models.models import Base, User, Organization, UserRole
 from core.security import get_password_hash, validate_password_requirements
 
 
-def run_setup(db_name: str, admin_name: str, admin_email: str, admin_password: str) -> str:
+def run_setup(db_name: str, admin_name: str, admin_email: str, admin_password: str, language: str | None = None) -> str:
     is_valid, message = validate_password_requirements(admin_password)
     if not is_valid:
         raise ValueError(message)

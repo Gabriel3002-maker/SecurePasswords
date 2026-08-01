@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Dashboard - Gestor de Contraseñas{% endblock %}
+{% block title %}{{ t('nav.dashboard') }} - {{ t('auth.page_title') }}{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -183,15 +183,15 @@
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title">Dashboard</h1>
-    <p class="page-subtitle">Bienvenido, {{ user.full_name or user.email }}</p>
+    <h1 class="page-title" data-i18n="nav.dashboard">Dashboard</h1>
+    <p class="page-subtitle" data-i18n="dashboard.welcome" data-i18n-var-name="{{ user.full_name or user.email }}">Bienvenido, {{ user.full_name or user.email }}</p>
 </div>
 
     <div class="stats-grid">
         <div class="stat-card purple">
             <div class="stat-content">
                 <div class="stat-info">
-                    <h3>Total Contraseñas</h3>
+                    <h3 data-i18n="dashboard.total_passwords">Total Contraseñas</h3>
                     <div class="stat-value" id="totalPasswords">0</div>
                 </div>
                 <div class="stat-icon">🔑</div>
@@ -200,7 +200,7 @@
         <div class="stat-card blue">
             <div class="stat-content">
                 <div class="stat-info">
-                    <h3>Compartidas</h3>
+                    <h3 data-i18n="dashboard.shared">Compartidas</h3>
                     <div class="stat-value" id="sharedPasswords">0</div>
                 </div>
                 <div class="stat-icon">👥</div>
@@ -209,7 +209,7 @@
         <div class="stat-card green">
             <div class="stat-content">
                 <div class="stat-info">
-                    <h3>Débiles/Repetidas</h3>
+                    <h3 data-i18n="dashboard.weak">Débiles/Repetidas</h3>
                     <div class="stat-value" id="weakCount">0</div>
                 </div>
                 <div class="stat-icon">⚠️</div>
@@ -218,33 +218,33 @@
     </div>
     <div id="alertsSection" class="hidden" style="margin-bottom:1.5rem">
         <div class="stat-card" style="border-top:4px solid var(--color-error);padding:1.5rem">
-            <h3 style="color:var(--color-error);margin-bottom:0.75rem">⚠️ Alertas de Seguridad</h3>
+            <h3 style="color:var(--color-error);margin-bottom:0.75rem" data-i18n="dashboard.security_alerts">⚠️ Alertas de Seguridad</h3>
             <div id="alertsList"></div>
         </div>
     </div>
 
 <div class="quick-actions">
-    <h2 class="section-title">Acciones Rápidas</h2>
+    <h2 class="section-title" data-i18n="dashboard.quick_actions">Acciones Rápidas</h2>
     <div class="actions-grid">
         <a href="/passwords" class="action-card purple">
             <span class="action-icon">➕</span>
             <div class="action-info">
-                <h3>Nueva Contraseña</h3>
-                <p>Agregar credenciales nuevas</p>
+                <h3 data-i18n="dashboard.new_password">Nueva Contraseña</h3>
+                <p data-i18n="dashboard.new_password_desc">Agregar credenciales nuevas</p>
             </div>
         </a>
         <a href="/ssh" class="action-card blue">
             <span class="action-icon">🚀</span>
             <div class="action-info">
-                <h3>Conectar SSH</h3>
-                <p>Abrir terminal remoto</p>
+                <h3 data-i18n="dashboard.connect_ssh">Conectar SSH</h3>
+                <p data-i18n="dashboard.connect_ssh_desc">Abrir terminal remoto</p>
             </div>
         </a>
         <a href="#" onclick="showChangePwd();return false" class="action-card" style="border:2px solid var(--color-gray-200)">
             <span class="action-icon">🔑</span>
             <div class="action-info">
-                <h3>Cambiar Contraseña</h3>
-                <p>Actualizar contraseña maestra</p>
+                <h3 data-i18n="dashboard.change_master_password">Cambiar Contraseña</h3>
+                <p data-i18n="dashboard.change_master_password_desc">Actualizar contraseña maestra</p>
             </div>
         </a>
     </div>
@@ -252,29 +252,29 @@
 
 <div id="changePwdSection" class="hidden">
     <div class="quick-actions" style="margin-top:1.5rem;max-width:500px">
-        <h2 class="section-title">🔑 Cambiar Contraseña Maestra</h2>
+        <h2 class="section-title" data-i18n="dashboard.change_master_title">🔑 Cambiar Contraseña Maestra</h2>
         <form id="dashboardChangePwdForm">
             <div class="form-group">
-                <label class="form-label">Contraseña actual</label>
+                <label class="form-label" data-i18n="dashboard.current_password">Contraseña actual</label>
                 <input type="password" id="dashOldPassword" class="form-input" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Nueva contraseña</label>
+                <label class="form-label" data-i18n="dashboard.new_password_field">Nueva contraseña</label>
                 <input type="password" id="dashNewPassword" class="form-input" required oninput="updateDashStrength()">
                 <div class="password-strength"><div id="dashStrengthBar" class="password-strength-bar"></div></div>
                 <span id="dashStrengthText" class="password-strength-text"></span>
             </div>
-            <button type="submit" class="modal-btn primary" style="width:100%">Cambiar Contraseña</button>
+            <button type="submit" class="modal-btn primary" style="width:100%" data-i18n="dashboard.change_password_button">Cambiar Contraseña</button>
         </form>
     </div>
 </div>
 
 <div class="activity-feed">
-    <h2 class="section-title">Actividad Reciente</h2>
+    <h2 class="section-title" data-i18n="dashboard.recent_activity">Actividad Reciente</h2>
     <div id="activityList">
         <div class="activity-item">
             <div class="activity-dot"></div>
-            <span class="activity-text">Cargando actividad...</span>
+            <span class="activity-text" data-i18n="dashboard.loading_activity">Cargando actividad...</span>
         </div>
     </div>
 </div>
@@ -305,12 +305,13 @@
                 const shared = credentials.filter(c => c.is_shared).length;
                 animateCounter(document.getElementById('totalPasswords'), total);
                 animateCounter(document.getElementById('sharedPasswords'), shared);
-                animateCounter(document.getElementById('sshConnections'), total);
+                const sshConnectionsEl = document.getElementById('sshConnections');
+                if (sshConnectionsEl) animateCounter(sshConnectionsEl, total);
             } else if (response.status === 401) {
                 logout();
             }
         } catch (error) {
-            console.error('Error al cargar estadísticas:', error);
+            console.error(t('dashboard.stats_load_error'), error);
         }
     }
 
@@ -321,7 +322,7 @@
                 const credentials = await response.json();
                 const container = document.getElementById('activityList');
                 if (credentials.length === 0) {
-                    container.innerHTML = `<div class="activity-item"><span class="activity-text">No hay actividad reciente</span></div>`;
+                    container.innerHTML = `<div class="activity-item"><span class="activity-text">${t('dashboard.no_recent_activity')}</span></div>`;
                     return;
                 }
                 const recent = credentials.slice(-5).reverse();
@@ -356,8 +357,8 @@
 
             alertsSection.classList.remove('hidden');
             let html = '';
-            if (weak.length) html += `<div class="alert-item">🔴 ${weak.length} contraseña(s) débil(es) — <a href="/passwords" style="color:var(--color-primary)">Revisar</a></div>`;
-            dups.forEach(d => { if (d.count > 1) html += `<div class="alert-item warning">🟡 "${d.credentials[0].host}" y ${d.count - 1} otra(s) usan la misma contraseña — <a href="/passwords" style="color:var(--color-primary)">Revisar</a></div>`; });
+            if (weak.length) html += `<div class="alert-item">🔴 ${t('dashboard.passwords_weak', {count: weak.length})} — <a href="/passwords" style="color:var(--color-primary)">${t('dashboard.review')}</a></div>`;
+            dups.forEach(d => { if (d.count > 1) html += `<div class="alert-item warning">🟡 ${t('dashboard.passwords_same', {host: d.credentials[0].host, count: d.count - 1})} — <a href="/passwords" style="color:var(--color-primary)">${t('dashboard.review')}</a></div>`; });
             alertsList.innerHTML = html;
             animateCounter(weakCountEl, totalIssues);
         } catch (_) { document.getElementById('weakCount').textContent = '—'; }
@@ -377,7 +378,7 @@
         if (/[A-Z]/.test(pwd)) score++; if (/[a-z]/.test(pwd)) score++;
         if (/\d/.test(pwd)) score++; if (/[^A-Za-z0-9]/.test(pwd)) score++;
         const colors = ['#ef4444','#ef4444','#f59e0b','#f59e0b','#22c55e','#22c55e'];
-        const labels = ['','Muy débil','Débil','Regular','Fuerte','Muy fuerte'];
+        const labels = ['', t('strength.very_weak'), t('strength.weak'), t('strength.regular'), t('strength.strong'), t('strength.very_strong')];
         bar.style.width = (score / 6 * 100) + '%';
         bar.style.background = colors[score] || '#22c55e';
         text.textContent = labels[score] || '';
@@ -394,14 +395,14 @@
                 credentials: 'include', body: JSON.stringify({old_password: oldPwd, new_password: newPwd})
             });
             if (r.ok) {
-                showToast('Contraseña actualizada', 'success');
+                showToast(t('dashboard.password_updated'), 'success');
                 document.getElementById('changePwdSection').classList.add('hidden');
                 document.getElementById('dashboardChangePwdForm').reset();
             } else {
                 const err = await r.json();
-                showToast(err.detail || 'Error', 'error');
+                showToast(err.detail || t('dashboard.change_pwd_error'), 'error');
             }
-        } catch (_) { showToast('Error de conexión', 'error'); }
+        } catch (_) { showToast(t('dashboard.connection_error'), 'error'); }
     });
 
     loadStats();

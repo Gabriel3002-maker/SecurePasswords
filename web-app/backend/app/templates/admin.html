@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Administración - Gestor{% endblock %}
+{% block title %}{{ t('admin.title') }} - {{ t('auth.page_title') }}{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -110,19 +110,19 @@
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title">Administración de Usuarios</h1>
+    <h1 class="page-title" data-i18n="admin.title">Administración de Usuarios</h1>
     <div class="toolbar">
         <input type="file" id="importFile" accept=".xlsx" class="hidden" onchange="uploadCredentials(this)">
-        <button onclick="document.getElementById('importFile').click()" class="toolbar-btn success">📥 Importar Excel</button>
-        <button onclick="exportCredentials()" class="toolbar-btn success">📊 Exportar Excel</button>
-        <button onclick="showCreateModal()" class="toolbar-btn primary">➕ Nuevo Usuario</button>
+        <button onclick="document.getElementById('importFile').click()" class="toolbar-btn success" data-i18n="admin.import_excel">📥 Importar Excel</button>
+        <button onclick="exportCredentials()" class="toolbar-btn success" data-i18n="admin.export_excel">📊 Exportar Excel</button>
+        <button onclick="showCreateModal()" class="toolbar-btn primary" data-i18n="admin.new_user">➕ Nuevo Usuario</button>
     </div>
 </div>
 
 <div class="card">
     <table class="users-table">
         <thead>
-            <tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr>
+            <tr><th data-i18n="admin.name">Nombre</th><th data-i18n="admin.email">Email</th><th data-i18n="admin.role">Rol</th><th data-i18n="admin.status">Estado</th><th data-i18n="admin.actions">Acciones</th></tr>
         </thead>
         <tbody id="usersTableBody"></tbody>
     </table>
@@ -130,7 +130,7 @@
 
 <div class="card" style="margin-top:1.5rem">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-        <h2 style="font-size:1.5rem;font-weight:700">📜 Auditoría</h2>
+        <h2 style="font-size:1.5rem;font-weight:700" data-i18n="admin.audit">📜 Auditoría</h2>
     </div>
     <div id="auditList" style="max-height:400px;overflow-y:auto"></div>
 </div>
@@ -138,30 +138,30 @@
 <!-- Create User Modal -->
 <div id="userModal" class="modal-overlay hidden" onclick="if(event.target===this)hideModal()">
     <div class="modal-content" onclick="event.stopPropagation()">
-        <h2 class="modal-title">Nuevo Usuario</h2>
+        <h2 class="modal-title" data-i18n="admin.new_user_modal">Nuevo Usuario</h2>
         <form id="userForm">
             <div class="form-group">
-                <label class="form-label">Nombre Completo</label>
+                <label class="form-label" data-i18n="auth.full_name">Nombre Completo</label>
                 <input type="text" id="fullName" class="form-input" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Email</label>
+                <label class="form-label" data-i18n="admin.email">Email</label>
                 <input type="email" id="email" class="form-input" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Contraseña</label>
+                <label class="form-label" data-i18n="auth.password">Contraseña</label>
                 <input type="password" id="password" class="form-input" required minlength="8">
             </div>
             <div class="form-group">
-                <label class="form-label">Rol</label>
+                <label class="form-label" data-i18n="admin.role">Rol</label>
                 <select id="role" class="form-select">
-                    <option value="user">Usuario</option>
-                    <option value="admin">Administrador</option>
+                    <option value="user" data-i18n="admin.role_user">Usuario</option>
+                    <option value="admin" data-i18n="admin.role_admin">Administrador</option>
                 </select>
             </div>
             <div class="modal-actions">
-                <button type="submit" class="modal-btn primary">Crear Usuario</button>
-                <button type="button" onclick="hideModal()" class="modal-btn secondary">Cancelar</button>
+                <button type="submit" class="modal-btn primary" data-i18n="admin.create_user">Crear Usuario</button>
+                <button type="button" onclick="hideModal()" class="modal-btn secondary" data-i18n="common.cancel">Cancelar</button>
             </div>
         </form>
     </div>
@@ -185,10 +185,10 @@
                 URL.revokeObjectURL(a.href);
             } else {
                 const err = await response.json();
-                showToast(err.detail || 'Error al exportar', 'error');
+                showToast(err.detail || t('admin.export_error'), 'error');
             }
         } catch (error) {
-            showToast('Error de conexión al exportar', 'error');
+            showToast(t('admin.export_connection_error'), 'error');
         }
     }
 
@@ -207,10 +207,10 @@
             if (response.ok) {
                 showToast(result.message, 'success');
             } else {
-                showToast(result.detail || 'Error al importar', 'error');
+                showToast(result.detail || t('admin.import_error'), 'error');
             }
         } catch (error) {
-            showToast('Error de conexión al importar', 'error');
+            showToast(t('admin.import_connection_error'), 'error');
         }
     }
 
@@ -221,24 +221,24 @@
                 displayUsers(await response.json());
             } else if (response.status === 401) logout();
         } catch (error) {
-            showToast('Error al cargar usuarios', 'error');
+            showToast(t('admin.load_error'), 'error');
         }
     }
 
     function displayUsers(users) {
         document.getElementById('usersTableBody').innerHTML = users.map(u =>
             `<tr>
-                <td style="font-weight:600;">${u.full_name || 'Sin nombre'}</td>
+                <td style="font-weight:600;">${u.full_name || t('admin.no_name')}</td>
                 <td style="font-family:var(--font-mono);font-size:0.875rem;">${u.email}</td>
-                <td><span class="role-badge ${u.role}">${u.role === 'admin' ? 'Admin' : 'Usuario'}</span></td>
-                <td><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Activo' : 'Inactivo'}</span></td>
+                <td><span class="role-badge ${u.role}">${t(u.role === 'admin' ? 'admin.role_admin' : 'admin.role_user')}</span></td>
+                <td><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${t(u.is_active ? 'admin.status_active' : 'admin.status_inactive')}</span></td>
                 <td>
                     <div class="action-btns">
                         ${u.id !== user.id ? `
                             <button onclick="toggleUserStatus('${u.id}', ${!u.is_active})" class="table-btn edit">
-                                ${u.is_active ? 'Desactivar' : 'Activar'}
+                                ${t(u.is_active ? 'admin.deactivate_btn' : 'admin.activate_btn')}
                             </button>
-                        ` : '<span style="color:var(--color-gray-500);font-size:0.875rem;">Tú</span>'}
+                        ` : '<span style="color:var(--color-gray-500);font-size:0.875rem;">' + t('admin.you') + '</span>'}
                     </div>
                 </td>
             </tr>`
@@ -269,33 +269,33 @@
             });
             if (response.ok) {
                 hideModal();
-                showToast('Usuario creado exitosamente', 'success');
+                showToast(t('admin.create_success'), 'success');
                 loadUsers();
             } else {
                 const err = await response.json();
-                showToast(err.detail || 'Error al crear usuario', 'error');
+                showToast(err.detail || t('admin.create_error'), 'error');
             }
         } catch (error) {
-            showToast('Error de conexión', 'error');
+            showToast(t('common.connection_error'), 'error');
         }
     });
 
     async function toggleUserStatus(userId, newStatus) {
-        const action = newStatus ? 'activar' : 'desactivar';
-        if (!confirm(`¿Estás seguro de ${action} este usuario?`)) return;
+        const action = newStatus ? t('admin.action_activate') : t('admin.action_deactivate');
+        if (!confirm(t('admin.toggle_confirm', {action}))) return;
         try {
             const response = await fetch(`${API_URL}/admin/users/${userId}`, {
                 method: 'PUT', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken()},
                 credentials: 'include', body: JSON.stringify({ is_active: newStatus })
             });
             if (response.ok) {
-                showToast(`Usuario ${action}do exitosamente`, 'success');
+                showToast(t('admin.toggle_success', {action}), 'success');
                 loadUsers();
             } else {
-                showToast(`Error al ${action} usuario`, 'error');
+                showToast(t('admin.toggle_error', {action}), 'error');
             }
         } catch (error) {
-            showToast('Error de conexión', 'error');
+            showToast(t('common.connection_error'), 'error');
         }
     }
 
@@ -306,9 +306,10 @@
             const logs = await r.json();
             const container = document.getElementById('auditList');
             const icons = {created:'✅', updated:'✏️', deleted:'🗑️', restored:'♻️'};
+            const actionNames = {created: t('admin.audit_created'), updated: t('admin.audit_updated'), deleted: t('admin.audit_deleted'), restored: t('admin.audit_restored')};
             container.innerHTML = logs.map(log =>
                 `<div class="audit-item">
-                    <div>${icons[log.action] || '📋'} <strong>${log.action}</strong> — ${log.resource_type} ${log.resource_id ? log.resource_id.slice(0,8)+'...' : ''}</div>
+                    <div>${icons[log.action] || '📋'} <strong>${actionNames[log.action] || log.action}</strong> — ${log.resource_type} ${log.resource_id ? log.resource_id.slice(0,8)+'...' : ''}</div>
                     <div class="time">${new Date(log.timestamp).toLocaleString()} ${log.ip_address ? '· '+log.ip_address : ''}</div>
                 </div>`
             ).join('');

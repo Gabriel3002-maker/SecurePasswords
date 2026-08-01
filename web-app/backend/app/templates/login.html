@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Login - Gestor de Contraseñas{% endblock %}
+{% block title %}Login - {{ t('auth.page_title') }}{% endblock %}
 
 {% block full_content %}
 <style>
@@ -29,14 +29,26 @@
     .shape:nth-child(2) { width: 120px; height: 120px; top: 70%; left: 80%; animation-delay: 2s; }
     .shape:nth-child(3) { width: 60px; height: 60px; top: 40%; left: 70%; animation-delay: 4s; }
 
-    .theme-btn-top {
+    .top-actions {
         position: fixed; top: 1rem; right: 1rem; z-index: 100;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .theme-btn-top {
         background: none; border: 2px solid rgba(255,255,255,0.3);
         border-radius: var(--radius-full);
         width: 2.5rem; height: 2.5rem;
         font-size: 1.2rem; cursor: pointer;
         display: flex; align-items: center; justify-content: center;
         transition: all var(--transition-base);
+    }
+    .lang-select-top {
+        background: rgba(255,255,255,0.9);
+        border: 2px solid rgba(255,255,255,0.3);
+        border-radius: var(--radius-full);
+        padding: 0.35rem 0.7rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--color-gray-800);
     }
     .theme-btn-top:hover { border-color: white; transform: scale(1.1); }
 
@@ -126,7 +138,14 @@
 </style>
 </head>
 <body>
-    <button class="theme-btn-top" onclick="toggleTheme()" id="loginThemeToggle" title="Cambiar tema">🌙</button>
+    <div class="top-actions">
+        <select id="langSelectTop" class="lang-select-top" onchange="changeLanguage(this.value)">
+            <option value="es">ES</option>
+            <option value="en">EN</option>
+            <option value="pt">PT</option>
+        </select>
+        <button class="theme-btn-top" onclick="toggleTheme()" id="loginThemeToggle" title="Cambiar tema">🌙</button>
+    </div>
     <div class="animated-background"></div>
     <div class="floating-shapes"><div class="shape"></div><div class="shape"></div><div class="shape"></div></div>
 
@@ -134,43 +153,43 @@
         <div class="login-card">
             <div class="logo">
                 <div class="logo-icon">🔐</div>
-                <h1>Gestor de Contraseñas</h1>
-                <p>Protege tus credenciales de forma segura</p>
+                <h1 data-i18n="auth.page_title">Gestor de Contraseñas</h1>
+                <p data-i18n="auth.welcome">Protege tus credenciales de forma segura</p>
             </div>
             <div class="tabs">
-                <button class="tab active" id="loginTab" onclick="showTab('login')">Iniciar Sesión</button>
-                <button class="tab" id="registerTab" onclick="showTab('register')">Registrarse</button>
+                <button class="tab active" id="loginTab" onclick="showTab('login')" data-i18n="auth.login">Iniciar Sesión</button>
+                <button class="tab" id="registerTab" onclick="showTab('register')" data-i18n="auth.register">Registrarse</button>
             </div>
 
             <form id="loginForm">
                 <div class="form-group">
-                    <label class="form-label">Correo Electrónico</label>
+                    <label class="form-label" data-i18n="auth.email">Correo Electrónico</label>
                     <input type="email" id="loginEmail" class="form-input" required autocomplete="email">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Contraseña</label>
+                    <label class="form-label" data-i18n="auth.password">Contraseña</label>
                     <div class="password-input-wrapper">
                         <input type="password" id="loginPassword" class="form-input" required autocomplete="current-password">
                         <button type="button" onclick="toggleLoginPassword()" class="toggle-password">👁️</button>
                     </div>
                 </div>
                 <button type="submit" class="submit-btn">
-                    <span class="btn-text">Iniciar Sesión</span>
+                    <span class="btn-text" data-i18n="auth.login">Iniciar Sesión</span>
                     <div class="spinner"></div>
                 </button>
             </form>
 
             <form id="registerForm" class="hidden">
                 <div class="form-group">
-                    <label class="form-label">Nombre Completo</label>
+                    <label class="form-label" data-i18n="auth.full_name">Nombre Completo</label>
                     <input type="text" id="registerName" class="form-input" autocomplete="name">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Correo Electrónico</label>
+                    <label class="form-label" data-i18n="auth.email">Correo Electrónico</label>
                     <input type="email" id="registerEmail" class="form-input" required autocomplete="email">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Contraseña</label>
+                    <label class="form-label" data-i18n="auth.password">Contraseña</label>
                     <div class="password-input-wrapper">
                         <input type="password" id="registerPassword" class="form-input" required autocomplete="new-password" oninput="updateRegisterStrength()">
                         <button type="button" onclick="toggleRegisterPassword()" class="toggle-password">👁️</button>
@@ -179,10 +198,10 @@
                         <div id="registerStrengthBar" class="password-strength-bar"></div>
                     </div>
                     <span id="registerStrengthText" class="password-strength-text"></span>
-                    <span class="hint">Usa al menos 8 caracteres, mayúsculas, minúsculas, números y un símbolo.</span>
+                    <span class="hint" data-i18n="setup.password_hint">Usa al menos 8 caracteres, mayúsculas, minúsculas, números y un símbolo.</span>
                 </div>
                 <button type="submit" class="submit-btn">
-                    <span class="btn-text">Crear Cuenta</span>
+                    <span class="btn-text" data-i18n="auth.create_account">Crear Cuenta</span>
                     <div class="spinner"></div>
                 </button>
             </form>
@@ -192,25 +211,16 @@
     </div>
 
 <script>
-    const API_URL = '/api';
-
-    function toggleTheme() {
-        const html = document.documentElement;
-        const current = html.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-        document.getElementById('loginThemeToggle').textContent = next === 'dark' ? '☀️' : '🌙';
+    function getCurrentLanguage() {
+        return localStorage.getItem('app-lang') || document.documentElement.getAttribute('data-lang') || '{{ locale }}';
     }
-    (function() {
-        const saved = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', saved);
-        const btn = document.getElementById('loginThemeToggle');
-        if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
-    })();
 
-    function getCSRFToken() {
-        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    function applyLoginTranslations() {
+        document.title = 'Login - ' + t('auth.page_title');
+        const registerPasswordInput = document.getElementById('registerPassword');
+        if (registerPasswordInput && registerPasswordInput.value) {
+            updateRegisterStrength();
+        }
     }
 
     function updateRegisterStrength() {
@@ -225,7 +235,7 @@
         if (/\d/.test(pwd)) score++;
         if (/[^A-Za-z0-9]/.test(pwd)) score++;
         const colors = ['#ef4444','#ef4444','#f59e0b','#f59e0b','#22c55e','#22c55e'];
-        const labels = ['','Muy débil','Débil','Regular','Fuerte','Muy fuerte'];
+        const labels = ['', t('strength.very_weak'), t('strength.weak'), t('strength.regular'), t('strength.strong'), t('strength.very_strong')];
         bar.style.width = (score / 6 * 100) + '%';
         bar.style.background = colors[score] || '#22c55e';
         text.textContent = labels[score] || '';
@@ -267,6 +277,10 @@
         setTimeout(() => message.classList.add('hidden'), 5000);
     }
 
+    window.addEventListener('app-language-changed', applyLoginTranslations);
+    window.addEventListener('DOMContentLoaded', applyLoginTranslations);
+    window.addEventListener('load', applyLoginTranslations);
+
     function setButtonLoading(button, loading) {
         if (loading) button.classList.add('loading');
         else button.classList.remove('loading');
@@ -286,15 +300,15 @@
             });
             const data = await response.json();
             if (response.ok) {
-                showMessage('¡Bienvenido! Redirigiendo...');
+                showMessage(t('auth.login_welcome'));
                 setTimeout(() => window.location.href = '/dashboard', 1000);
             } else {
                 setButtonLoading(button, false);
-                showMessage(data.detail || 'Error al iniciar sesión', true);
+                showMessage(data.detail || t('auth.login_error'), true);
             }
         } catch (error) {
             setButtonLoading(button, false);
-            showMessage('Error de conexión', true);
+            showMessage(t('auth.connection_error'), true);
         }
     });
 
@@ -314,15 +328,15 @@
             const data = await response.json();
             if (response.ok) {
                 setButtonLoading(button, false);
-                showMessage('Cuenta creada exitosamente. Ahora puedes iniciar sesión.');
+                showMessage(t('auth.register_success'));
                 setTimeout(() => showTab('login'), 2000);
             } else {
                 setButtonLoading(button, false);
-                showMessage(data.detail || 'Error al registrarse', true);
+                showMessage(data.detail || t('auth.register_error'), true);
             }
         } catch (error) {
             setButtonLoading(button, false);
-            showMessage('Error de conexión', true);
+            showMessage(t('auth.connection_error'), true);
         }
     });
 </script>

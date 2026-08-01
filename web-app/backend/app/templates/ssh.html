@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Terminal SSH - Gestor{% endblock %}
+{% block title %}{{ t('ssh.title') }} - {{ t('auth.page_title') }}{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
@@ -74,17 +74,17 @@
 {% endblock %}
 
 {% block content %}
-<h1 class="page-title">Terminal SSH</h1>
+<h1 class="page-title" data-i18n="ssh.title">Terminal SSH</h1>
 
 <div id="credentialSelector">
-    <h3>Selecciona una credencial para conectar</h3>
+    <h3 data-i18n="ssh.select_credential">Selecciona una credencial para conectar</h3>
     <div id="credentialsList"></div>
 </div>
 
 <div id="terminalContainer" class="hidden">
     <div class="terminal-header">
-        <span class="connection-info" id="connectionInfo">Conectando...</span>
-        <button onclick="disconnectSSH()" class="disconnect-btn">Desconectar</button>
+        <span class="connection-info" id="connectionInfo" data-i18n="ssh.connecting">Conectando...</span>
+        <button onclick="disconnectSSH()" class="disconnect-btn" data-i18n="ssh.disconnect">Desconectar</button>
     </div>
     <div id="terminal"></div>
 </div>
@@ -114,7 +114,7 @@
     function displayCredentials(credentials) {
         const container = document.getElementById('credentialsList');
         if (credentials.length === 0) {
-            container.innerHTML = `<div class="empty-state"><p style="font-size:1.25rem;margin-bottom:0.5rem;">🔐 No hay credenciales SSH disponibles</p><p style="font-size:0.875rem;">Solicita al administrador que comparta credenciales con permiso SSH</p></div>`;
+            container.innerHTML = `<div class="empty-state"><p style="font-size:1.25rem;margin-bottom:0.5rem;">🔐 ${t('ssh.no_credentials')}</p><p style="font-size:0.875rem;">${t('ssh.no_credentials_help')}</p></div>`;
             return;
         }
         container.innerHTML = credentials.map(cred =>
@@ -126,7 +126,7 @@
     }
 
     async function connectSSH(credentialId) {
-        showToast('Iniciando conexión SSH...');
+        showToast(t('ssh.connect_start'));
         try {
             const response = await fetch(`${API_URL}/ssh/connect`, {
                 method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken()},
@@ -141,10 +141,10 @@
                 initTerminal(data.session_id);
             } else {
                 const err = await response.json();
-                showToast(err.detail || 'Error al conectar SSH', 'error');
+                showToast(err.detail || t('ssh.connect_failed'), 'error');
             }
         } catch (error) {
-            showToast('Error de conexión con el servidor', 'error');
+            showToast(t('ssh.connect_error'), 'error');
         }
     }
 
@@ -162,14 +162,14 @@
 
         websocket = new WebSocket(`${WS_URL}/ssh/terminal/${sessionId}`);
         websocket.onopen = () => {
-            document.getElementById('connectionInfo').textContent = 'Conectado ✓';
+            document.getElementById('connectionInfo').textContent = t('ssh.connecting_state');
             terminal.onData(data => { if (websocket.readyState === WebSocket.OPEN) websocket.send(data); });
         };
         websocket.onmessage = (event) => terminal.write(event.data);
-        websocket.onerror = () => terminal.write('\r\n\x1b[1;31mError de conexión\x1b[0m\r\n');
+        websocket.onerror = () => terminal.write('\r\n\x1b[1;31m' + t('ssh.error_connection') + '\x1b[0m\r\n');
         websocket.onclose = () => {
-            terminal.write('\r\n\x1b[1;33mConexión cerrada\x1b[0m\r\n');
-            document.getElementById('connectionInfo').textContent = 'Desconectado';
+            terminal.write('\r\n\x1b[1;33m' + t('ssh.connection_closed') + '\x1b[0m\r\n');
+            document.getElementById('connectionInfo').textContent = t('ssh.disconnected_state');
         };
     }
 
@@ -179,7 +179,7 @@
         document.getElementById('terminalContainer').classList.add('hidden');
         document.getElementById('credentialSelector').classList.remove('hidden');
         currentSessionId = null;
-        showToast('Desconectado del servidor SSH');
+        showToast(t('ssh.disconnected'));
     }
 
     document.addEventListener('DOMContentLoaded', () => {
