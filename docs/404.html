@@ -30,6 +30,12 @@
       } else {
         base = location.origin + '/';
       }
+      var seg = (parts && parts.length ? parts[parts.length - 1] : '');
+      try { seg = decodeURIComponent(seg); } catch (e) {}
+      seg = seg.toLowerCase();
+      if (seg === 'english' || seg === 'en') base += '#en';
+      else if (seg === 'español' || seg === 'espanol' || seg === 'es') base += '#es';
+      else if (seg === 'português' || seg === 'portugues' || seg === 'pt') base += '#pt';
       document.querySelector('a').setAttribute('href', base);
       window.location.replace(base);
     })();

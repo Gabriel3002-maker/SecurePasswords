@@ -133,8 +133,16 @@
     function setLang(lang) {
       document.body.setAttribute('data-lang', lang);
       document.querySelectorAll('.lang-switch button').forEach(btn => btn.classList.toggle('active', btn.textContent.toLowerCase().includes(lang === 'es' ? 'español' : 'english')));
+      try { history.replaceState(null, '', '#' + lang); } catch (e) {}
     }
-    setLang('es');
+    (function initLang() {
+      var h = (location.hash || '').replace('#', '').toLowerCase();
+      setLang(h === 'en' || h === 'pt' ? h : 'es');
+    })();
+    window.addEventListener('hashchange', function () {
+      var h = (location.hash || '').replace('#', '').toLowerCase();
+      if (h === 'en' || h === 'pt' || h === 'es') setLang(h);
+    });
   </script>
 </body>
 </html>
