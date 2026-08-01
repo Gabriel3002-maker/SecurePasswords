@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Terminal SSH - Gestor{% endblock %}
+{% block title %}{{ t('ssh.title') }} - {{ t('auth.page_title') }}{% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
@@ -20,7 +20,7 @@
         color: var(--color-gray-900);
         margin-bottom: 1rem;
     }
-    #credentialsList {
+    #credentialsList, #newTerminalList {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
         gap: 1rem;
@@ -44,27 +44,120 @@
     .cred-btn .host-addr { font-size: 0.875rem; color: var(--color-gray-600); font-family: var(--font-mono); }
 
     #terminalContainer {
+        display: flex;
+        flex-direction: column;
         background: #1a1a2e;
         border-radius: var(--radius-xl);
-        padding: 1.5rem;
         box-shadow: var(--shadow-xl);
+        height: 72vh;
+        min-height: 420px;
+        overflow: hidden;
     }
-    .terminal-header {
+    .ssh-toolbar {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        padding: 0.6rem 1rem;
+        background: #16213e;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        flex: 0 0 auto;
+    }
+    .ssh-toolbar .toolbar-btn {
+        background: rgba(255,255,255,0.08);
+        color: #e2e8f0;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        font-size: 0.85rem;
+        line-height: 1.2;
+    }
+    .ssh-toolbar .toolbar-btn:hover { background: rgba(255,255,255,0.18); }
+    .ssh-toolbar .toolbar-btn.danger:hover { background: #ef4444; }
+    .toolbar-spacer { flex: 1; }
+
+    #workspace { flex: 1; display: flex; min-height: 0; min-width: 0; position: relative; }
+    #workspace.maximized .pane:not(.pane-maximized) { display: none !important; }
+
+    .split { display: flex; min-height: 0; min-width: 0; overflow: hidden; }
+    .split.col { flex-direction: column; }
+    .split.row { flex-direction: row; }
+
+    .pane {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+        background: #1a1a2e;
+        overflow: hidden;
+    }
+    .pane-titlebar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1rem;
+        gap: 0.5rem;
+        padding: 0.3rem 0.6rem;
+        background: #16213e;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        user-select: none;
+        cursor: default;
+        flex: 0 0 auto;
     }
-    .connection-info { color: #4ade80; font-family: var(--font-mono); font-size: 0.9rem; }
-    .disconnect-btn {
-        background: #ef4444; color: white;
-        border: none; padding: 0.5rem 1rem;
-        border-radius: var(--radius-md);
-        font-weight: 600; cursor: pointer;
-        transition: all var(--transition-base);
+    .pane-title {
+        color: #94a3b8;
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
-    .disconnect-btn:hover { background: #dc2626; transform: translateY(-1px); }
-    #terminal { height: 500px; }
+    .pane-connected .pane-title { color: #4ade80; }
+    .pane-controls { display: flex; gap: 0.15rem; flex: 0 0 auto; }
+    .pane-controls button {
+        background: transparent;
+        color: #94a3b8;
+        border: none;
+        cursor: pointer;
+        font-size: 0.85rem;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        line-height: 1.3;
+    }
+    .pane-controls button:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    .pane-body { flex: 1 1 0%; min-height: 0; min-width: 0; background: #1a1a2e; }
+    .pane.focused .pane-titlebar { background: #1e293b; }
+
+    .splitter { flex: 0 0 4px; background: #0f0f23; z-index: 2; }
+    .splitter:hover, .splitter.dragging { background: var(--color-primary); }
+    .splitter-h { height: 4px; width: 100%; cursor: row-resize; }
+    .splitter-v { width: 4px; height: 100%; cursor: col-resize; }
+
+    .pane.minimized { flex: 0 0 auto !important; }
+    .pane.minimized .pane-body { display: none; }
+
+    .ssh-modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    .ssh-modal-content {
+        background: var(--color-white);
+        border-radius: var(--radius-xl);
+        padding: 1.5rem;
+        width: min(640px, 92vw);
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-xl);
+    }
+    .ssh-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .ssh-modal-header h3 { font-size: 1.25rem; font-weight: 700; color: var(--color-gray-900); }
+    .ssh-modal-close { background: transparent; border: none; font-size: 1.25rem; cursor: pointer; color: var(--color-gray-600); line-height: 1; }
+    .ssh-modal-close:hover { color: var(--color-gray-900); }
+    .ssh-modal-sub { color: var(--color-gray-600); font-size: 0.9rem; margin-bottom: 1rem; }
     .empty-state {
         text-align: center; padding: 2rem; color: var(--color-gray-600);
         grid-column: 1 / -1;
@@ -74,19 +167,35 @@
 {% endblock %}
 
 {% block content %}
-<h1 class="page-title">Terminal SSH</h1>
+<h1 class="page-title" data-i18n="ssh.title">Terminal SSH</h1>
 
 <div id="credentialSelector">
-    <h3>Selecciona una credencial para conectar</h3>
+    <h3 data-i18n="ssh.select_credential">Selecciona una credencial para conectar</h3>
     <div id="credentialsList"></div>
 </div>
 
 <div id="terminalContainer" class="hidden">
-    <div class="terminal-header">
-        <span class="connection-info" id="connectionInfo">Conectando...</span>
-        <button onclick="disconnectSSH()" class="disconnect-btn">Desconectar</button>
+    <div class="ssh-toolbar">
+        <button class="toolbar-btn" onclick="sshNewTerminal()" title="{{ t('ssh.new_terminal') }}">
+            <span aria-hidden="true">＋</span> <span data-i18n="ssh.new_terminal">Nueva terminal</span>
+        </button>
+        <button class="toolbar-btn" onclick="sshSplitFocused('h')" title="{{ t('ssh.split_h') }}">⇕</button>
+        <button class="toolbar-btn" onclick="sshSplitFocused('v')" title="{{ t('ssh.split_v') }}">⇔</button>
+        <span class="toolbar-spacer"></span>
+        <button class="toolbar-btn danger" onclick="sshCloseAll()" title="{{ t('ssh.close_all') }}">✕</button>
     </div>
-    <div id="terminal"></div>
+    <div id="workspace"></div>
+</div>
+
+<div id="newTerminalModal" class="ssh-modal hidden">
+    <div class="ssh-modal-content">
+        <div class="ssh-modal-header">
+            <h3 data-i18n="ssh.new_terminal_title">Nueva terminal</h3>
+            <button class="ssh-modal-close" onclick="sshCloseModal()">✕</button>
+        </div>
+        <p class="ssh-modal-sub" data-i18n="ssh.select_credential_new">Selecciona una credencial para la nueva terminal</p>
+        <div id="newTerminalList"></div>
+    </div>
 </div>
 {% endblock %}
 
@@ -94,98 +203,438 @@
 <script>
     const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api`;
     const user = {{ user | tojson }};
-    let terminal = null;
-    let websocket = null;
-    let currentSessionId = null;
+
+    let credentials = [];
+    let terminalTree = null;
+    let focusedPaneId = null;
+    let lastPaneId = null;
+    const panesById = new Map();
+
+    function uid() {
+        return 'p' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    }
+    function esc(s) {
+        return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function getFocusedPane() {
+        return (focusedPaneId && panesById.get(focusedPaneId)) || panesById.get(lastPaneId) || null;
+    }
+    function setFocusedPane(id) {
+        focusedPaneId = id;
+        document.querySelectorAll('.pane').forEach(p => p.classList.toggle('focused', p.dataset.paneId === id));
+    }
 
     async function loadCredentials() {
         try {
             const response = await fetch(`${API_URL}/credentials/`, { credentials: 'include' });
             if (response.ok) {
-                const credentials = await response.json();
-                const sshCredentials = credentials.filter(cred => (cred.user_permissions || {}).can_connect_ssh === true);
-                displayCredentials(sshCredentials);
+                const all = await response.json();
+                credentials = all.filter(cred => (cred.user_permissions || {}).can_connect_ssh === true);
+                displayCredentials(credentials, 'credentialsList');
             } else if (response.status === 401) logout();
         } catch (error) {
             console.error('Error:', error);
         }
     }
 
-    function displayCredentials(credentials) {
-        const container = document.getElementById('credentialsList');
-        if (credentials.length === 0) {
-            container.innerHTML = `<div class="empty-state"><p style="font-size:1.25rem;margin-bottom:0.5rem;">🔐 No hay credenciales SSH disponibles</p><p style="font-size:0.875rem;">Solicita al administrador que comparta credenciales con permiso SSH</p></div>`;
+    function displayCredentials(list, containerId, isNewFlow = false) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        if (list.length === 0) {
+            container.innerHTML = `<div class="empty-state"><p style="font-size:1.25rem;margin-bottom:0.5rem;">🔐 ${t('ssh.no_credentials')}</p><p style="font-size:0.875rem;">${t('ssh.no_credentials_help')}</p></div>`;
             return;
         }
-        container.innerHTML = credentials.map(cred =>
-            `<button onclick="connectSSH('${cred.id}')" class="cred-btn">
-                <div class="host-name">${cred.comment || cred.host}</div>
-                <div class="host-addr">${cred.username}@${cred.host}:${cred.port || 22}</div>
+        container.innerHTML = list.map(cred =>
+            `<button onclick="${isNewFlow ? `pickNewCredential('${cred.id}')` : `connectSSH('${cred.id}')`}" class="cred-btn">
+                <div class="host-name">${esc(cred.comment || cred.host)}</div>
+                <div class="host-addr">${esc(cred.username)}@${esc(cred.host)}:${cred.port || 22}</div>
             </button>`
         ).join('');
     }
 
-    async function connectSSH(credentialId) {
-        showToast('Iniciando conexión SSH...');
+    function startTerminal(cred) {
+        const pane = createPane(cred);
+        connectPane(pane);
+        terminalTree = { type: 'leaf', pane: pane, el: pane.el };
+        document.getElementById('credentialSelector').classList.add('hidden');
+        document.getElementById('terminalContainer').classList.remove('hidden');
+        renderTree();
+        setFocusedPane(pane.id);
+    }
+
+    function connectSSH(credId) {
+        const cred = credentials.find(c => c.id === credId);
+        if (!cred) { showToast(t('ssh.connect_failed'), 'error'); return; }
+        if (terminalTree) { pickNewCredential(credId); return; }
+        showToast(t('ssh.connect_start'));
+        startTerminal(cred);
+    }
+
+    function createPane(cred) {
+        const pane = {
+            id: uid(),
+            cred: cred,
+            title: cred.comment || cred.host,
+            sessionId: null,
+            term: null,
+            fitAddon: null,
+            ws: null,
+            ro: null,
+            el: null,
+            body: null,
+            titleEl: null,
+            status: 'connecting'
+        };
+        pane.el = buildPaneEl(pane);
+        panesById.set(pane.id, pane);
+        lastPaneId = pane.id;
+        return pane;
+    }
+
+    function buildPaneEl(pane) {
+        const el = document.createElement('div');
+        el.className = 'pane';
+        el.dataset.paneId = pane.id;
+        pane.el = el;
+        el.innerHTML = `
+            <div class="pane-titlebar">
+                <span class="pane-title"></span>
+                <span class="pane-controls">
+                    <button onclick="sshSplitPane('${pane.id}', 'h')" title="${esc(t('ssh.split_h'))}">⇕</button>
+                    <button onclick="sshSplitPane('${pane.id}', 'v')" title="${esc(t('ssh.split_v'))}">⇔</button>
+                    <button class="btn-minmax" onclick="sshToggleMaximize('${pane.id}')" title="${esc(t('ssh.maximize'))}">□</button>
+                    <button class="btn-min" onclick="sshMinimize('${pane.id}')" title="${esc(t('ssh.minimize'))}">−</button>
+                    <button onclick="sshClosePane('${pane.id}')" title="${esc(t('ssh.close_pane'))}">✕</button>
+                </span>
+            </div>
+            <div class="pane-body"></div>`;
+        pane.body = el.querySelector('.pane-body');
+        pane.titleEl = el.querySelector('.pane-title');
+        updatePaneTitle(pane);
+        el.addEventListener('mousedown', () => setFocusedPane(pane.id));
+        return el;
+    }
+
+    function updatePaneTitle(pane) {
+        const suffix = pane.status === 'connected' ? ' ✓'
+            : pane.status === 'disconnected' ? ` — ${t('ssh.disconnected_state')}`
+            : ' …';
+        pane.titleEl.textContent = `${pane.title} (${pane.cred.username}@${pane.cred.host})${suffix}`;
+        pane.el.classList.toggle('pane-connected', pane.status === 'connected');
+    }
+
+    async function connectPane(pane) {
         try {
             const response = await fetch(`${API_URL}/ssh/connect`, {
-                method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken()},
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken() },
                 credentials: 'include',
-                body: JSON.stringify({ credential_id: credentialId })
+                body: JSON.stringify({ credential_id: pane.cred.id })
             });
-            if (response.ok) {
-                const data = await response.json();
-                currentSessionId = data.session_id;
-                document.getElementById('credentialSelector').classList.add('hidden');
-                document.getElementById('terminalContainer').classList.remove('hidden');
-                initTerminal(data.session_id);
-            } else {
-                const err = await response.json();
-                showToast(err.detail || 'Error al conectar SSH', 'error');
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                showToast(err.detail || t('ssh.connect_failed'), 'error');
+                if (response.status === 401) logout();
+                pane.status = 'disconnected';
+                updatePaneTitle(pane);
+                return;
             }
+            const data = await response.json();
+            pane.sessionId = data.session_id;
+
+            const term = new Terminal({
+                cursorBlink: true,
+                fontSize: 14,
+                fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+                theme: { background: '#1a1a2e', foreground: '#00ff00' }
+            });
+            const fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+            term.open(pane.body);
+            fitAddon.fit();
+            pane.term = term;
+            pane.fitAddon = fitAddon;
+
+            const ro = new ResizeObserver(() => {
+                if (pane.body.offsetWidth > 0 && pane.body.offsetHeight > 0 && !pane.el.classList.contains('minimized')) {
+                    try { fitAddon.fit(); } catch (e) {}
+                }
+            });
+            ro.observe(pane.body);
+            pane.ro = ro;
+
+            const ws = new WebSocket(`${WS_URL}/ssh/terminal/${pane.sessionId}`);
+            pane.ws = ws;
+            ws.onopen = () => {
+                pane.status = 'connected';
+                updatePaneTitle(pane);
+                term.onData(data => { if (ws.readyState === WebSocket.OPEN) ws.send(data); });
+            };
+            ws.onmessage = (event) => term.write(event.data);
+            ws.onerror = () => term.write('\r\n\x1b[1;31m' + t('ssh.error_connection') + '\x1b[0m\r\n');
+            ws.onclose = () => {
+                pane.status = 'disconnected';
+                updatePaneTitle(pane);
+                term.write('\r\n\x1b[1;33m' + t('ssh.connection_closed') + '\x1b[0m\r\n');
+            };
         } catch (error) {
-            showToast('Error de conexión con el servidor', 'error');
+            console.error(error);
+            showToast(t('ssh.connect_error'), 'error');
         }
     }
 
-    function initTerminal(sessionId) {
-        terminal = new Terminal({
-            cursorBlink: true,
-            fontSize: 14,
-            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-            theme: { background: '#1a1a2e', foreground: '#00ff00' }
+    // ---------- Árbol de paneles ----------
+    function buildNodeEl(node) {
+        if (node.type === 'leaf') {
+            const el = node.pane.el;
+            el.style.flex = '1 1 0%';
+            return el;
+        }
+        const wrap = document.createElement('div');
+        wrap.className = 'split ' + (node.dir === 'h' ? 'col' : 'row');
+        wrap.style.flex = '1 1 0%';
+        node.splitters = [];
+        node.children.forEach((child, i) => {
+            if (i > 0) {
+                const s = document.createElement('div');
+                s.className = 'splitter ' + (node.dir === 'h' ? 'splitter-h' : 'splitter-v');
+                node.splitters.push(s);
+                wrap.appendChild(s);
+            }
+            const childEl = buildNodeEl(child);
+            childEl.style.flexGrow = node.basis[i];
+            childEl.style.flexBasis = '0%';
+            childEl.style.flexShrink = '1';
+            wrap.appendChild(childEl);
         });
-        const fitAddon = new FitAddon.FitAddon();
-        terminal.loadAddon(fitAddon);
-        terminal.open(document.getElementById('terminal'));
-        fitAddon.fit();
-
-        websocket = new WebSocket(`${WS_URL}/ssh/terminal/${sessionId}`);
-        websocket.onopen = () => {
-            document.getElementById('connectionInfo').textContent = 'Conectado ✓';
-            terminal.onData(data => { if (websocket.readyState === WebSocket.OPEN) websocket.send(data); });
-        };
-        websocket.onmessage = (event) => terminal.write(event.data);
-        websocket.onerror = () => terminal.write('\r\n\x1b[1;31mError de conexión\x1b[0m\r\n');
-        websocket.onclose = () => {
-            terminal.write('\r\n\x1b[1;33mConexión cerrada\x1b[0m\r\n');
-            document.getElementById('connectionInfo').textContent = 'Desconectado';
-        };
+        node.el = wrap;
+        return wrap;
     }
 
-    function disconnectSSH() {
-        if (websocket) { websocket.close(); websocket = null; }
-        if (terminal) { terminal.dispose(); terminal = null; }
+    function attachSplitter(s, node, i) {
+        const isH = node.dir === 'h';
+        s.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            s.classList.add('dragging');
+            try { s.setPointerCapture(e.pointerId); } catch (err) {}
+            const wrap = node.el;
+            const childA = node.children[i - 1].el;
+            const childB = node.children[i].el;
+            const start = isH ? e.clientY : e.clientX;
+            const getDim = () => (isH ? wrap.clientHeight : wrap.clientWidth);
+            const minPx = 70;
+            const onMove = (ev) => {
+                const dim = getDim();
+                if (dim <= 0) return;
+                const delta = (isH ? ev.clientY : ev.clientX) - start;
+                const curA = parseFloat(childA.style.flexGrow) || 1;
+                const curB = parseFloat(childB.style.flexGrow) || 1;
+                const total = curA + curB;
+                let pxA = (curA / total) * dim + delta;
+                let pxB = dim - pxA;
+                if (pxA < minPx || pxB < minPx) return;
+                childA.style.flexGrow = pxA;
+                childB.style.flexGrow = pxB;
+                node.basis[i - 1] = pxA;
+                node.basis[i] = pxB;
+            };
+            const onUp = () => {
+                s.classList.remove('dragging');
+                s.removeEventListener('pointermove', onMove);
+                s.removeEventListener('pointerup', onUp);
+                try { s.releasePointerCapture(e.pointerId); } catch (err) {}
+                node.children.forEach(c => {
+                    if (c.type === 'leaf' && c.pane.fitAddon) {
+                        try { c.pane.fitAddon.fit(); } catch (err) {}
+                    }
+                });
+            };
+            s.addEventListener('pointermove', onMove);
+            s.addEventListener('pointerup', onUp);
+        });
+    }
+
+    function bindSplitters(node) {
+        if (!node || node.type === 'leaf') return;
+        for (let i = 1; i < node.children.length; i++) {
+            attachSplitter(node.splitters[i - 1], node, i);
+        }
+        node.children.forEach(c => bindSplitters(c));
+    }
+
+    function renderTree() {
+        const workspace = document.getElementById('workspace');
+        if (!terminalTree) { workspace.replaceChildren(); return; }
+        workspace.replaceChildren(buildNodeEl(terminalTree));
+        bindSplitters(terminalTree);
+    }
+
+    function findLeafNode(node, paneId) {
+        if (!node) return null;
+        if (node.type === 'leaf') return node.pane.id === paneId ? node : null;
+        for (const c of node.children) { const r = findLeafNode(c, paneId); if (r) return r; }
+        return null;
+    }
+
+    function findParent(node, target) {
+        if (!node || node.type === 'leaf') return null;
+        if (node.children.includes(target)) return node;
+        for (const c of node.children) { const r = findParent(c, target); if (r) return r; }
+        return null;
+    }
+
+    function splitPaneNode(pane, dir, cred) {
+        const node = findLeafNode(terminalTree, pane.id);
+        if (!node) return;
+        const newPane = createPane(cred);
+        connectPane(newPane);
+        const newLeaf = { type: 'leaf', pane: newPane, el: newPane.el };
+        const splitNode = { type: 'split', dir: dir, basis: [50, 50], children: [node, newLeaf], splitters: [] };
+        if (node === terminalTree) {
+            terminalTree = splitNode;
+        } else {
+            const parent = findParent(terminalTree, node);
+            parent.children[parent.children.indexOf(node)] = splitNode;
+        }
+        renderTree();
+        setFocusedPane(newPane.id);
+    }
+
+    // ---------- Acciones de panel ----------
+    function sshSplitPane(paneId, dir) {
+        const pane = panesById.get(paneId) || getFocusedPane();
+        if (!pane) return;
+        splitPaneNode(pane, dir, pane.cred);
+    }
+
+    function sshSplitFocused(dir) {
+        const pane = getFocusedPane();
+        if (pane) sshSplitPane(pane.id, dir);
+    }
+
+    function disposePane(pane) {
+        if (pane.ws) { try { pane.ws.onclose = null; pane.ws.close(); } catch (e) {} }
+        if (pane.ro) { try { pane.ro.disconnect(); } catch (e) {} }
+        if (pane.term) { try { pane.term.dispose(); } catch (e) {} }
+        if (pane.el && pane.el.parentNode) pane.el.parentNode.removeChild(pane.el);
+        panesById.delete(pane.id);
+    }
+
+    function clearMaximizeState() {
+        const workspace = document.getElementById('workspace');
+        delete workspace.dataset.maximized;
+        workspace.classList.remove('maximized');
+        document.querySelectorAll('.pane').forEach(p => p.classList.remove('pane-maximized'));
+    }
+
+    function sshClosePane(paneId) {
+        const node = findLeafNode(terminalTree, paneId);
+        if (!node) return;
+        const workspace = document.getElementById('workspace');
+        if (workspace.dataset.maximized === paneId) clearMaximizeState();
+        disposePane(node.pane);
+        if (terminalTree === node) {
+            terminalTree = null;
+        } else {
+            const parent = findParent(terminalTree, node);
+            const idx = parent.children.indexOf(node);
+            parent.children.splice(idx, 1);
+            if (parent.children.length === 1) {
+                const survivor = parent.children[0];
+                if (parent === terminalTree) {
+                    terminalTree = survivor;
+                } else {
+                    const gp = findParent(terminalTree, parent);
+                    gp.children[gp.children.indexOf(parent)] = survivor;
+                }
+            }
+        }
+        renderTree();
+        if (!terminalTree) {
+            document.getElementById('terminalContainer').classList.add('hidden');
+            document.getElementById('credentialSelector').classList.remove('hidden');
+            focusedPaneId = null;
+        } else {
+            const fp = getFocusedPane();
+            setFocusedPane(fp ? fp.id : lastPaneId);
+        }
+    }
+
+    function sshMinimize(paneId) {
+        const pane = panesById.get(paneId);
+        if (!pane) return;
+        const isMin = pane.el.classList.toggle('minimized');
+        const btn = pane.el.querySelector('.btn-min');
+        btn.textContent = isMin ? '▢' : '−';
+        btn.title = isMin ? t('ssh.restore') : t('ssh.minimize');
+        requestAnimationFrame(() => {
+            if (!isMin && pane.fitAddon) { try { pane.fitAddon.fit(); } catch (e) {} }
+        });
+    }
+
+    function sshToggleMaximize(paneId) {
+        const pane = panesById.get(paneId);
+        if (!pane) return;
+        const workspace = document.getElementById('workspace');
+        const isMax = workspace.dataset.maximized === paneId;
+        if (isMax) {
+            clearMaximizeState();
+            panesById.forEach(pp => { if (pp.fitAddon) { try { pp.fitAddon.fit(); } catch (e) {} } });
+        } else {
+            document.querySelectorAll('.pane').forEach(p => p.classList.remove('pane-maximized'));
+            workspace.dataset.maximized = paneId;
+            workspace.classList.add('maximized');
+            pane.el.classList.add('pane-maximized');
+            requestAnimationFrame(() => { if (pane.fitAddon) { try { pane.fitAddon.fit(); } catch (e) {} } });
+        }
+        document.querySelectorAll('.btn-minmax').forEach(b => {
+            const pid = b.closest('.pane').dataset.paneId;
+            b.textContent = workspace.dataset.maximized === pid ? '❐' : '□';
+            b.title = workspace.dataset.maximized === pid ? t('ssh.restore') : t('ssh.maximize');
+        });
+    }
+
+    function sshNewTerminal() {
+        displayCredentials(credentials, 'newTerminalList', true);
+        document.getElementById('newTerminalModal').classList.remove('hidden');
+    }
+
+    function sshCloseModal() {
+        document.getElementById('newTerminalModal').classList.add('hidden');
+    }
+
+    function pickNewCredential(credId) {
+        sshCloseModal();
+        const cred = credentials.find(c => c.id === credId);
+        if (!cred) return;
+        const target = getFocusedPane();
+        if (target) {
+            splitPaneNode(target, 'v', cred);
+        } else {
+            startTerminal(cred);
+        }
+    }
+
+    function sshCloseAll() {
+        if (!terminalTree) return;
+        if (!confirm(t('ssh.close_all_confirm'))) return;
+        [...panesById.values()].forEach(p => disposePane(p));
+        terminalTree = null;
+        focusedPaneId = null;
+        lastPaneId = null;
+        clearMaximizeState();
         document.getElementById('terminalContainer').classList.add('hidden');
         document.getElementById('credentialSelector').classList.remove('hidden');
-        currentSessionId = null;
-        showToast('Desconectado del servidor SSH');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-        loadCredentials();
-        const connectId = new URLSearchParams(window.location.search).get('connect');
-        if (connectId) setTimeout(() => connectSSH(connectId), 100);
+        const modal = document.getElementById('newTerminalModal');
+        modal.addEventListener('mousedown', (e) => { if (e.target === modal) sshCloseModal(); });
+        (async () => {
+            await loadCredentials();
+            const connectId = new URLSearchParams(window.location.search).get('connect');
+            if (connectId) setTimeout(() => connectSSH(connectId), 100);
+        })();
     });
 </script>
 {% endblock %}

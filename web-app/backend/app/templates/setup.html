@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Configuración Inicial{% endblock %}
+{% block title %}{{ t('setup.title') }}{% endblock %}
 
 {% block full_content %}
 <style>
@@ -13,70 +13,195 @@
         backdrop-filter: blur(10px);
         padding: 2.5rem; border-radius: 1.5rem;
         box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
-        width: 100%; max-width: 500px;
+        width: 100%; max-width: 540px;
         animation: slide-up 0.5s ease-out;
     }
     [data-theme="dark"] .setup-card {
         background: rgba(30,30,46,0.95);
         border: 1px solid rgba(69,71,90,0.5);
     }
-    .setup-header { text-align: center; margin-bottom: 2rem; }
-    .setup-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+    .setup-header { text-align: center; margin-bottom: 1.5rem; }
+    .setup-icon { font-size: 3rem; margin-bottom: 0.5rem; display: block; }
     .setup-title { font-size: 1.875rem; font-weight: 800; color: var(--color-gray-900); margin: 0; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .setup-subtitle { color: var(--color-gray-600); margin-top: 0.5rem; }
-    .form-group { margin-bottom: 1.5rem; }
+    .setup-subtitle { color: var(--color-gray-600); margin-top: 0.5rem; font-size: 0.9rem; }
+
+    .stepper { display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.75rem; }
+    .step-dot { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; font-weight: 700; color: var(--color-gray-400); }
+    .step-dot .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--color-gray-200); }
+    .step-dot.active { color: var(--color-primary); }
+    .step-dot.active .dot { background: var(--color-primary); }
+    .step-dot.done .dot { background: #22c55e; }
+
+    .step { display: none; }
+    .step.active { display: block; animation: slide-up 0.35s ease-out; }
+
+    .form-group { margin-bottom: 1.25rem; }
     .form-label { display: block; font-weight: 600; color: var(--color-gray-700); margin-bottom: 0.5rem; }
     .form-input { width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--color-gray-200); border-radius: var(--radius-lg); font-size: 1rem; transition: all 0.2s; box-sizing: border-box; background: var(--color-white); }
     .form-input:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
-    .btn-primary { width: 100%; padding: 1rem; background: var(--gradient-primary); color: white; border: none; border-radius: var(--radius-lg); font-weight: 700; font-size: 1.125rem; cursor: pointer; transition: all 0.2s; margin-top: 1rem; }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
     .section-title { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-gray-500); font-weight: 700; margin: 1.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--color-gray-200); }
     .hint { display: block; margin-top: 0.5rem; color: var(--color-gray-500); font-size: 0.8rem; }
     .password-strength { margin-top: 0.5rem; height: 4px; border-radius: 2px; background: var(--color-gray-200); overflow: hidden; }
     .password-strength-bar { height: 100%; width: 0%; border-radius: 2px; transition: all var(--transition-base); }
-    .password-strength-text { font-size: 0.75rem; margin-top: 0.25rem; font-weight: 600; }
+    .password-strength-text { font-size: 0.75rem; margin-top: 0.25rem; font-weight: 600; min-height: 1rem; }
+    .btn-primary { width: 100%; padding: 1rem; background: var(--gradient-primary); color: white; border: none; border-radius: var(--radius-lg); font-weight: 700; font-size: 1.125rem; cursor: pointer; transition: all 0.2s; margin-top: 1rem; }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-row { display: flex; gap: 0.75rem; }
+    .btn-row .btn-primary { flex: 1; }
+    .btn-secondary { flex: 0 0 auto; padding: 1rem 1.5rem; background: transparent; color: var(--color-gray-600); border: 2px solid var(--color-gray-200); border-radius: var(--radius-lg); font-weight: 700; cursor: pointer; margin-top: 1rem; }
+    .btn-secondary:hover { border-color: var(--color-gray-400); }
+
+    .lang-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    .lang-card { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; padding: 1rem 0.5rem; border: 2px solid var(--color-gray-200); border-radius: var(--radius-lg); background: transparent; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+    .lang-card:hover { border-color: var(--color-primary); }
+    .lang-card.active { border-color: var(--color-primary); background: rgba(99,102,241,0.08); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+    .lang-flag { font-size: 1.75rem; line-height: 1; }
+    .lang-name { font-weight: 700; font-size: 0.9rem; color: var(--color-gray-700); }
 </style>
 
 <div class="setup-card">
     <div class="setup-header">
         <span class="setup-icon">🧙‍♂️</span>
-        <h1 class="setup-title">Configuración Inicial</h1>
-        <p class="setup-subtitle">Bienvenido al Gestor de Contraseñas</p>
+        <h1 class="setup-title" data-i18n="setup.title">Configuración Inicial</h1>
+        <p class="setup-subtitle" data-i18n="setup.subtitle">Bienvenido al Gestor de Contraseñas</p>
+    </div>
+
+    <div class="stepper">
+        <div class="step-dot active" id="stepDot1"><span class="dot"></span><span data-i18n="setup.step1_label">Paso 1</span></div>
+        <div class="step-dot" id="stepDot2"><span class="dot"></span><span data-i18n="setup.step2_label">Paso 2</span></div>
     </div>
 
     <form id="setupForm" onsubmit="handleSetup(event)">
-        <div class="section-title">Base de Datos</div>
-        <div class="form-group">
-            <label class="form-label">Nombre de la Base de Datos</label>
-            <input type="text" name="db_name" class="form-input" placeholder="ej: passwords.db" value="passwords.db" required>
+        <input type="hidden" name="language" id="languageInput" value="{{ locale }}">
+
+        <!-- PASO 1: Idioma + Contraseña Maestra -->
+        <div class="step active" id="step1">
+            <div class="section-title" data-i18n="setup.language_section">Idioma</div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="setup.language_label">Selecciona tu idioma</label>
+                <div class="lang-grid" id="langGrid">
+                    <button type="button" class="lang-card" data-lang="es" onclick="selectSetupLang('es')">
+                        <span class="lang-flag">🇪🇸</span>
+                        <span class="lang-name">Español</span>
+                    </button>
+                    <button type="button" class="lang-card" data-lang="en" onclick="selectSetupLang('en')">
+                        <span class="lang-flag">🇬🇧</span>
+                        <span class="lang-name">English</span>
+                    </button>
+                    <button type="button" class="lang-card" data-lang="pt" onclick="selectSetupLang('pt')">
+                        <span class="lang-flag">🇧🇷</span>
+                        <span class="lang-name">Português</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="section-title" data-i18n="setup.master_section">Contraseña Maestra</div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="setup.master_label" for="masterPassword">Contraseña maestra</label>
+                <input type="password" id="masterPassword" name="master_password" class="form-input" data-i18n-placeholder="setup.master_placeholder" placeholder="••••••••" required minlength="8" oninput="updateMasterStrength(this)">
+                <div class="password-strength"><div id="masterStrengthBar" class="password-strength-bar"></div></div>
+                <span id="masterStrengthText" class="password-strength-text"></span>
+                <span class="hint" data-i18n="setup.master_hint">Protege el gestor. Guárdala bien: podrás recuperarla por Telegram si la pierdes.</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="setup.master_confirm_label" for="masterConfirm">Confirmar contraseña maestra</label>
+                <input type="password" id="masterConfirm" class="form-input" data-i18n-placeholder="setup.master_confirm_placeholder" placeholder="••••••••" required minlength="8">
+                <span id="masterMatchMsg" class="password-strength-text"></span>
+            </div>
+
+            <button type="button" class="btn-primary" id="continueBtn" data-i18n="setup.continue" onclick="goToStep(2)">Continuar</button>
         </div>
 
-        <div class="section-title">Administrador</div>
-        <div class="form-group">
-            <label class="form-label">Nombre Completo</label>
-            <input type="text" name="admin_name" class="form-input" placeholder="Tu nombre" required>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Correo Electrónico</label>
-            <input type="email" name="admin_email" class="form-input" placeholder="admin@ejemplo.com" required>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Contraseña</label>
-            <input type="password" name="admin_password" class="form-input" placeholder="••••••••" required minlength="8" oninput="updateStrength(this)">
-            <div class="password-strength"><div id="strengthBar" class="password-strength-bar"></div></div>
-            <span id="strengthText" class="password-strength-text"></span>
-            <span class="hint">Usa al menos 8 caracteres, mayúsculas, minúsculas, números y un símbolo.</span>
-        </div>
+        <!-- PASO 2: Administrador + Base de Datos + Telegram -->
+        <div class="step" id="step2">
+            <div class="section-title" data-i18n="setup.database_section">Base de Datos</div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="setup.db_name_label" for="dbName">Nombre de la Base de Datos</label>
+                <input type="text" name="db_name" id="dbName" class="form-input" data-i18n-placeholder="setup.db_name_placeholder" placeholder="ej: passwords.db" value="passwords.db" required>
+            </div>
 
-        <button type="submit" class="btn-primary">Guardar y Continuar</button>
+            <div class="section-title" data-i18n="setup.admin_section">Administrador</div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="setup.full_name_label" for="adminName">Nombre Completo</label>
+                <input type="text" name="admin_name" id="adminName" class="form-input" data-i18n-placeholder="setup.full_name_placeholder" placeholder="Tu nombre" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="setup.email_label" for="adminEmail">Correo Electrónico</label>
+                <input type="email" name="admin_email" id="adminEmail" class="form-input" data-i18n-placeholder="setup.email_placeholder" placeholder="admin@ejemplo.com" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="setup.password_label" for="adminPassword">Contraseña</label>
+                <input type="password" name="admin_password" id="adminPassword" class="form-input" data-i18n-placeholder="setup.password_placeholder" placeholder="••••••••" required minlength="8" oninput="updateStrength(this)">
+                <div class="password-strength"><div id="strengthBar" class="password-strength-bar"></div></div>
+                <span id="strengthText" class="password-strength-text"></span>
+                <span class="hint" data-i18n="setup.password_hint">Usa al menos 8 caracteres, mayúsculas, minúsculas, números y un símbolo.</span>
+            </div>
+
+            <div class="section-title" data-i18n="setup.telegram_section">Telegram (opcional)</div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="setup.telegram_label" for="telegramToken">Token del bot (de @BotFather)</label>
+                <input type="text" name="telegram_bot_token" id="telegramToken" class="form-input" data-i18n-placeholder="setup.telegram_placeholder" placeholder="123456789:AA...">
+                <span class="hint" data-i18n="setup.telegram_hint">Crea tu bot en @BotFather y pega aquí su token. Luego escribe /start al bot para vincular tu chat y recibir avisos de sesión y códigos de recuperación.</span>
+            </div>
+
+            <div class="btn-row">
+                <button type="button" class="btn-secondary" data-i18n="setup.back" onclick="goToStep(1)">Atrás</button>
+                <button type="submit" class="btn-primary" id="submitBtn" data-i18n="setup.submit">Guardar y Continuar</button>
+            </div>
+        </div>
     </form>
 </div>
 
 <script>
-    function updateStrength(input) {
+    const SETUP_LANG = '{{ locale }}';
+
+    function goToStep(step) {
+        if (step === 2) {
+            const master = document.getElementById('masterPassword').value;
+            const confirm = document.getElementById('masterConfirm').value;
+            const msg = document.getElementById('masterMatchMsg');
+            if (master !== confirm) {
+                msg.textContent = t('setup.master_mismatch');
+                msg.style.color = '#dc2626';
+                document.getElementById('masterConfirm').focus();
+                return;
+            }
+            if (!master) {
+                msg.textContent = t('setup.master_required');
+                msg.style.color = '#dc2626';
+                return;
+            }
+            msg.textContent = '';
+        }
+        document.getElementById('step1').classList.toggle('active', step === 1);
+        document.getElementById('step2').classList.toggle('active', step === 2);
+        document.getElementById('stepDot1').classList.toggle('active', step === 1);
+        document.getElementById('stepDot1').classList.toggle('done', step === 2);
+        document.getElementById('stepDot2').classList.toggle('active', step === 2);
+        if (step === 2) document.getElementById('adminName').focus();
+    }
+
+    function selectSetupLang(lang) {
+        document.getElementById('languageInput').value = lang;
+        document.querySelectorAll('#langGrid .lang-card').forEach((card) => {
+            card.classList.toggle('active', card.dataset.lang === lang);
+        });
+        changeLanguage(lang);
+    }
+
+    window.addEventListener('app-language-changed', () => {
+        const current = getAppLanguage();
+        document.getElementById('languageInput').value = current;
+        document.querySelectorAll('#langGrid .lang-card').forEach((card) => {
+            card.classList.toggle('active', card.dataset.lang === current);
+        });
+    });
+
+    function updateStrength(input, barId, textId) {
         const pwd = input.value;
-        const bar = document.getElementById('strengthBar');
-        const text = document.getElementById('strengthText');
+        const bar = document.getElementById(barId);
+        const text = document.getElementById(textId);
         let score = 0;
         if (pwd.length >= 8) score++;
         if (pwd.length >= 12) score++;
@@ -85,22 +210,44 @@
         if (/\d/.test(pwd)) score++;
         if (/[^A-Za-z0-9]/.test(pwd)) score++;
         const colors = ['#ef4444','#ef4444','#f59e0b','#f59e0b','#22c55e','#22c55e'];
-        const labels = ['','Muy débil','Débil','Regular','Fuerte','Muy fuerte'];
+        const labels = ['', t('strength.very_weak'), t('strength.weak'), t('strength.regular'), t('strength.strong'), t('strength.very_strong')];
         bar.style.width = (score / 6 * 100) + '%';
         bar.style.background = colors[score] || '#22c55e';
         text.textContent = labels[score] || '';
         text.style.color = colors[score] || '#22c55e';
     }
 
+    function updateStrength(input) {
+        updateStrength(input, 'strengthBar', 'strengthText');
+    }
+
+    function updateMasterStrength(input) {
+        updateStrength(input, 'masterStrengthBar', 'masterStrengthText');
+    }
+
     async function handleSetup(event) {
         event.preventDefault();
         const form = event.target;
-        const btn = form.querySelector('button');
+        const btn = document.getElementById('submitBtn');
         const originalText = btn.textContent;
         btn.disabled = true;
-        btn.textContent = 'Configurando...';
+        btn.textContent = t('setup.configuring');
+
+        const master = document.getElementById('masterPassword').value;
+        const confirm = document.getElementById('masterConfirm').value;
+        if (master !== confirm) {
+            document.getElementById('masterMatchMsg').textContent = t('setup.master_mismatch');
+            document.getElementById('masterMatchMsg').style.color = '#dc2626';
+            btn.disabled = false;
+            btn.textContent = originalText;
+            goToStep(1);
+            return;
+        }
 
         const data = Object.fromEntries(new FormData(form).entries());
+        const lang = data.language || 'es';
+        localStorage.setItem('app-lang', lang);
+        document.documentElement.setAttribute('data-lang', lang);
         try {
             const response = await fetch('/api/setup', {
                 method: 'POST',
@@ -108,19 +255,29 @@
                 body: JSON.stringify(data)
             });
             if (response.ok) {
-                btn.textContent = '¡Listo! Redirigiendo...';
+                btn.textContent = t('setup.done');
                 setTimeout(() => window.location.href = '/', 1500);
             } else {
                 const error = await response.json();
-                alert('Error: ' + (error.detail || 'Error en la configuración'));
+                alert(t('setup.error') + (error.detail || t('setup.connection_error')));
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
         } catch (error) {
-            alert('Error de conexión');
+            alert(t('setup.connection_error'));
             btn.disabled = false;
             btn.textContent = originalText;
         }
     }
+
+    (function initSetupLang() {
+        const current = (typeof getAppLanguage === 'function' && getAppLanguage())
+            || document.documentElement.getAttribute('data-lang')
+            || SETUP_LANG;
+        document.getElementById('languageInput').value = current;
+        document.querySelectorAll('#langGrid .lang-card').forEach((card) => {
+            card.classList.toggle('active', card.dataset.lang === current);
+        });
+    })();
 </script>
 {% endblock %}
