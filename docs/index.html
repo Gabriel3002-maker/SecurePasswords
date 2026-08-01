@@ -39,9 +39,12 @@
     .card { background: var(--panel); border-radius: 18px; padding: 1.1rem; border: 1px solid rgba(255,255,255,.08); }
     .card h2 { margin-top: 0; font-size: 1.05rem; }
     .card ul { padding-left: 1rem; color: var(--muted); }
+    .card li { margin-bottom: .4rem; }
     .card code { color: #e9d5ff; }
     .lang { margin-top: 1.2rem; color: var(--muted); font-size: .95rem; }
     a { color: #93c5fd; }
+    .badges { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
+    .badge { background: rgba(56,189,248,.12); border: 1px solid rgba(56,189,248,.3); color: #bae6fd; border-radius: 999px; padding: .35rem .7rem; font-size: .85rem; }
     [data-lang="en"] { display: none; }
     body[data-lang="en"] [data-lang="es"] { display: none; }
     body[data-lang="en"] [data-lang="en"] { display: block; }
@@ -51,14 +54,21 @@
   <div class="container">
     <header>
       <div class="brand">🔐 SecurePasswords</div>
-      <span class="pill">v1.0.1 · UI + Docs</span>
+      <span class="pill">v1.0.3 · Features + Docs</span>
     </header>
 
     <section class="hero">
-      <h1 data-lang="es">SecurePasswords v1.0.1</h1>
-      <h1 data-lang="en">SecurePasswords v1.0.1</h1>
-      <p data-lang="es">Una mejora inicial para hacer el proyecto más claro, más usable y más preparado para compartir en GitHub. Esta versión enfoca la experiencia visual, la documentación y la base para crecer.</p>
-      <p data-lang="en">An initial improvement to make the project clearer, more usable, and better prepared to share on GitHub. This release focuses on the visual experience, documentation, and the foundation to grow.</p>
+      <h1 data-lang="es">SecurePasswords v1.0.3</h1>
+      <h1 data-lang="en">SecurePasswords v1.0.3</h1>
+      <p data-lang="es">Gestor de contraseñas web con terminal SSH, bot de Telegram, recuperación de contraseña maestra y soporte trilingüe. Listo para producción con Docker.</p>
+      <p data-lang="en">Web password manager with an SSH terminal, Telegram bot, master password recovery, and trilingual support. Production-ready with Docker.</p>
+      <div class="badges">
+        <span class="badge">🛡️ Seguridad reforzada / Hardened security</span>
+        <span class="badge">🤖 Bot de Telegram</span>
+        <span class="badge">🔑 Recuperación maestra</span>
+        <span class="badge">🗣️ ES / EN / PT</span>
+        <span class="badge">🐳 Docker</span>
+      </div>
       <div class="lang-switch">
         <button type="button" class="active" onclick="setLang('es')">Español</button>
         <button type="button" onclick="setLang('en')">English</button>
@@ -69,46 +79,50 @@
 
     <div class="grid">
       <div class="card">
-        <h2 data-lang="es">✅ Qué se mejoró</h2>
-        <h2 data-lang="en">✅ What improved</h2>
+        <h2 data-lang="es">🚀 Nuevas funciones</h2>
+        <h2 data-lang="en">🚀 New features</h2>
         <ul data-lang="es">
-          <li>Interfaz más limpia y ordenada</li>
-          <li>Mejor estructura del backend</li>
-          <li>Seguridad básica reforzada</li>
-          <li>Documentación para GitHub Pages</li>
+          <li>Asistente de configuración en 2 pasos (idioma + contraseña maestra; admin + Telegram)</li>
+          <li>Traducción en vivo: español, inglés y portugués</li>
+          <li>Bot de Telegram: avisos de inicio de sesión y recuperación por código</li>
+          <li>Terminal SSH interactivo desde el navegador</li>
         </ul>
         <ul data-lang="en">
-          <li>Cleaner and more organized interface</li>
-          <li>Improved backend structure</li>
-          <li>Stronger basic security</li>
-          <li>Documentation prepared for GitHub Pages</li>
+          <li>2-step setup wizard (language + master password; admin + Telegram)</li>
+          <li>Live translation: Spanish, English and Portuguese</li>
+          <li>Telegram bot: login alerts and code-based recovery</li>
+          <li>Interactive SSH terminal in the browser</li>
         </ul>
       </div>
       <div class="card">
-        <h2 data-lang="es">🛠️ Cambios principales</h2>
-        <h2 data-lang="en">🛠️ Main changes</h2>
+        <h2 data-lang="es">🛡️ Seguridad</h2>
+        <h2 data-lang="en">🛡️ Security</h2>
         <ul data-lang="es">
-          <li>Home más legible y menos cargado</li>
-          <li>Sección de docs para explicar cambios</li>
-          <li>Preparación para versión pública</li>
+          <li>Contraseña maestra hasheada con bcrypt</li>
+          <li>Credenciales encriptadas con Fernet</li>
+          <li>Autenticación JWT con roles Admin / Operador</li>
+          <li>Protección CSRF y recuperación solo vía Telegram vinculado</li>
         </ul>
         <ul data-lang="en">
-          <li>Cleaner and lighter home view</li>
-          <li>Docs section to explain changes</li>
-          <li>Preparation for a public release</li>
+          <li>Master password hashed with bcrypt</li>
+          <li>Credentials encrypted with Fernet</li>
+          <li>JWT auth with Admin / Operator roles</li>
+          <li>CSRF protection and recovery only via linked Telegram</li>
         </ul>
       </div>
       <div class="card">
         <h2 data-lang="es">📚 Estado</h2>
         <h2 data-lang="en">📚 Status</h2>
         <ul data-lang="es">
-          <li>UI inicial mejorada</li>
-          <li>Docs en español e inglés</li>
+          <li>Wizard, i18n, Telegram y recuperación completos</li>
+          <li>Terminal SSH corregido y probado</li>
+          <li>32 pruebas automatizadas en verde</li>
           <li>Próximos pasos: más módulos y refinamiento</li>
         </ul>
         <ul data-lang="en">
-          <li>Initial UI improved</li>
-          <li>Docs available in Spanish and English</li>
+          <li>Wizard, i18n, Telegram and recovery complete</li>
+          <li>SSH terminal fixed and tested</li>
+          <li>32 automated tests passing</li>
           <li>Next steps: more modules and refinement</li>
         </ul>
       </div>
