@@ -1,298 +1,147 @@
-<!DOCTYPE html>
-<html lang="es">
+{% extends "layout.html" %}
+{% block title %}Login - Gestor de Contraseñas{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Gestor de Contraseñas</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--font-sans);
-            overflow: hidden;
-        }
+{% block full_content %}
+<style>
+    body {
+        margin: 0; padding: 0; min-height: 100vh;
+        display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-sans); overflow: hidden;
+    }
+    .animated-background {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--gradient-animated);
+        background-size: 400% 400%;
+        animation: gradient-shift 15s ease infinite;
+        z-index: -1;
+    }
+    .floating-shapes {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        overflow: hidden; z-index: -1;
+    }
+    .shape {
+        position: absolute;
+        background: rgba(255,255,255,0.1);
+        border-radius: 50%;
+        animation: float 6s ease-in-out infinite;
+    }
+    .shape:nth-child(1) { width: 80px; height: 80px; top: 10%; left: 10%; animation-delay: 0s; }
+    .shape:nth-child(2) { width: 120px; height: 120px; top: 70%; left: 80%; animation-delay: 2s; }
+    .shape:nth-child(3) { width: 60px; height: 60px; top: 40%; left: 70%; animation-delay: 4s; }
 
-        .animated-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--gradient-animated);
-            background-size: 400% 400%;
-            animation: gradient-shift 15s ease infinite;
-            z-index: -1;
-        }
+    .theme-btn-top {
+        position: fixed; top: 1rem; right: 1rem; z-index: 100;
+        background: none; border: 2px solid rgba(255,255,255,0.3);
+        border-radius: var(--radius-full);
+        width: 2.5rem; height: 2.5rem;
+        font-size: 1.2rem; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: all var(--transition-base);
+    }
+    .theme-btn-top:hover { border-color: white; transform: scale(1.1); }
 
-        .floating-shapes {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: -1;
-        }
+    .login-container {
+        position: relative; width: 100%; max-width: 450px;
+        padding: 1rem; animation: scale-in 0.5s ease-out;
+    }
+    .login-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: var(--radius-2xl);
+        padding: 3rem 2.5rem;
+        box-shadow: var(--shadow-2xl);
+        border: 1px solid rgba(255,255,255,0.3);
+    }
+    [data-theme="dark"] .login-card {
+        background: rgba(30,30,46,0.95);
+        border-color: rgba(69,71,90,0.5);
+    }
+    .logo { text-align: center; margin-bottom: 2rem; }
+    .logo-icon { font-size: 4rem; margin-bottom: 0.5rem; display: inline-block; animation: float 3s ease-in-out infinite; }
+    .logo h1 { font-size: 1.875rem; font-weight: 800; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 0; }
+    .logo p { color: var(--color-gray-600); font-size: 0.875rem; margin: 0.5rem 0 0 0; }
 
-        .shape {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: float 6s ease-in-out infinite;
-        }
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; background: var(--color-gray-100); padding: 0.25rem; border-radius: var(--radius-lg); }
+    .tab { flex: 1; padding: 0.75rem; border: none; background: transparent; border-radius: var(--radius-md); font-weight: 600; font-family: var(--font-sans); color: var(--color-gray-600); cursor: pointer; transition: all var(--transition-base); }
+    .tab.active { background: var(--color-white); color: var(--color-primary); box-shadow: var(--shadow-sm); }
 
-        .shape:nth-child(1) {
-            width: 80px;
-            height: 80px;
-            top: 10%;
-            left: 10%;
-            animation-delay: 0s;
-        }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-label { display: block; font-weight: 600; color: var(--color-gray-700); margin-bottom: 0.5rem; font-size: 0.875rem; }
+    .form-input {
+        width: 100%; padding: 0.875rem 1rem;
+        border: 2px solid var(--color-gray-200);
+        border-radius: var(--radius-lg);
+        font-family: var(--font-sans); font-size: 1rem;
+        transition: all var(--transition-base);
+        background: var(--color-white);
+        box-sizing: border-box;
+    }
+    .form-input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(124,58,237,0.1), var(--shadow-glow); }
 
-        .shape:nth-child(2) {
-            width: 120px;
-            height: 120px;
-            top: 70%;
-            left: 80%;
-            animation-delay: 2s;
-        }
+    .password-input-wrapper { position: relative; }
+    .toggle-password {
+        position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+        background: none; border: none; cursor: pointer; font-size: 1.25rem; opacity: 0.6;
+    }
+    .toggle-password:hover { opacity: 1; }
 
-        .shape:nth-child(3) {
-            width: 60px;
-            height: 60px;
-            top: 40%;
-            left: 70%;
-            animation-delay: 4s;
-        }
+    .password-strength {
+        margin-top: 0.5rem;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--color-gray-200);
+        overflow: hidden;
+    }
+    .password-strength-bar {
+        height: 100%; width: 0%;
+        border-radius: 2px;
+        transition: all var(--transition-base);
+    }
+    .password-strength-text {
+        font-size: 0.75rem; margin-top: 0.25rem; font-weight: 600;
+    }
 
-        .login-container {
-            position: relative;
-            width: 100%;
-            max-width: 450px;
-            padding: 1rem;
-            animation: scale-in 0.5s ease-out;
-        }
+    .submit-btn {
+        width: 100%; padding: 1rem; border: none; border-radius: var(--radius-lg);
+        background: var(--gradient-primary); color: var(--color-white);
+        font-weight: 700; font-size: 1rem; font-family: var(--font-sans);
+        cursor: pointer; transition: all var(--transition-base);
+        box-shadow: var(--shadow-md); position: relative; overflow: hidden;
+    }
+    .submit-btn:hover { box-shadow: var(--shadow-lg), var(--shadow-glow); transform: translateY(-2px); }
+    .submit-btn:active { transform: translateY(0); }
+    .submit-btn.loading { pointer-events: none; opacity: 0.7; }
+    .submit-btn .spinner { display: none; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: var(--color-white); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+    .submit-btn.loading .spinner { display: block; }
+    .submit-btn.loading .btn-text { display: none; }
 
-        .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: var(--radius-2xl);
-            padding: 3rem 2.5rem;
-            box-shadow: var(--shadow-2xl);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .logo {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .logo-icon {
-            font-size: 4rem;
-            margin-bottom: 0.5rem;
-            display: inline-block;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .logo h1 {
-            font-size: 1.875rem;
-            font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin: 0;
-        }
-
-        .logo p {
-            color: var(--color-gray-600);
-            font-size: 0.875rem;
-            margin: 0.5rem 0 0 0;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 2rem;
-            background: var(--color-gray-100);
-            padding: 0.25rem;
-            border-radius: var(--radius-lg);
-        }
-
-        .tab {
-            flex: 1;
-            padding: 0.75rem;
-            border: none;
-            background: transparent;
-            border-radius: var(--radius-md);
-            font-weight: 600;
-            font-family: var(--font-sans);
-            color: var(--color-gray-600);
-            cursor: pointer;
-            transition: all var(--transition-base);
-        }
-
-        .tab.active {
-            background: var(--color-white);
-            color: var(--color-primary);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 600;
-            color: var(--color-gray-700);
-            margin-bottom: 0.5rem;
-            font-size: 0.875rem;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 0.875rem 1rem;
-            border: 2px solid var(--color-gray-200);
-            border-radius: var(--radius-lg);
-            font-family: var(--font-sans);
-            font-size: 1rem;
-            transition: all var(--transition-base);
-            background: var(--color-white);
-            box-sizing: border-box;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1), var(--shadow-glow);
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 1rem;
-            border: none;
-            border-radius: var(--radius-lg);
-            background: var(--gradient-primary);
-            color: var(--color-white);
-            font-weight: 700;
-            font-size: 1rem;
-            font-family: var(--font-sans);
-            cursor: pointer;
-            transition: all var(--transition-base);
-            box-shadow: var(--shadow-md);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .submit-btn:hover {
-            box-shadow: var(--shadow-lg), var(--shadow-glow);
-            transform: translateY(-2px);
-        }
-
-        .submit-btn:active {
-            transform: translateY(0);
-        }
-
-        .submit-btn.loading {
-            pointer-events: none;
-            opacity: 0.7;
-        }
-
-        .submit-btn .spinner {
-            display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top-color: var(--color-white);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto;
-        }
-
-        .submit-btn.loading .spinner {
-            display: block;
-        }
-
-        .submit-btn.loading .btn-text {
-            display: none;
-        }
-
-        .message {
-            margin-top: 1rem;
-            padding: 1rem;
-            border-radius: var(--radius-lg);
-            font-size: 0.875rem;
-            font-weight: 500;
-            animation: slide-up var(--transition-base);
-        }
-
-        .message.error {
-            background: rgba(239, 68, 68, 0.1);
-            color: #dc2626;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .message.success {
-            background: rgba(34, 197, 94, 0.1);
-            color: #16a34a;
-            border: 1px solid rgba(34, 197, 94, 0.2);
-        }
-
-        .hint {
-            display: block;
-            margin-top: 0.5rem;
-            color: var(--color-gray-500);
-            font-size: 0.8rem;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        @media (max-width: 640px) {
-            .login-card {
-                padding: 2rem 1.5rem;
-            }
-        }
-    </style>
+    .message { margin-top: 1rem; padding: 1rem; border-radius: var(--radius-lg); font-size: 0.875rem; font-weight: 500; animation: slide-up var(--transition-base); }
+    .message.error { background: rgba(239,68,68,0.1); color: #dc2626; border: 1px solid rgba(239,68,68,0.2); }
+    .message.success { background: rgba(34,197,94,0.1); color: #16a34a; border: 1px solid rgba(34,197,94,0.2); }
+    .hint { display: block; margin-top: 0.5rem; color: var(--color-gray-500); font-size: 0.8rem; }
+    .hidden { display: none !important; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (max-width: 640px) { .login-card { padding: 2rem 1.5rem; } }
+</style>
 </head>
-
 <body>
+    <button class="theme-btn-top" onclick="toggleTheme()" id="loginThemeToggle" title="Cambiar tema">🌙</button>
     <div class="animated-background"></div>
-    <div class="floating-shapes">
-        <div class="shape"></div>
-        <div class="shape"></div>
-        <div class="shape"></div>
-    </div>
+    <div class="floating-shapes"><div class="shape"></div><div class="shape"></div><div class="shape"></div></div>
 
     <div class="login-container">
         <div class="login-card">
-            <!-- Logo -->
             <div class="logo">
                 <div class="logo-icon">🔐</div>
                 <h1>Gestor de Contraseñas</h1>
                 <p>Protege tus credenciales de forma segura</p>
             </div>
-
-            <!-- Tabs -->
             <div class="tabs">
-                <button class="tab active" id="loginTab" onclick="showTab('login')">
-                    Iniciar Sesión
-                </button>
-                <button class="tab" id="registerTab" onclick="showTab('register')">
-                    Registrarse
-                </button>
+                <button class="tab active" id="loginTab" onclick="showTab('login')">Iniciar Sesión</button>
+                <button class="tab" id="registerTab" onclick="showTab('register')">Registrarse</button>
             </div>
 
-            <!-- Login Form -->
             <form id="loginForm">
                 <div class="form-group">
                     <label class="form-label">Correo Electrónico</label>
@@ -300,8 +149,10 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Contraseña</label>
-                    <input type="password" id="loginPassword" class="form-input" required
-                        autocomplete="current-password">
+                    <div class="password-input-wrapper">
+                        <input type="password" id="loginPassword" class="form-input" required autocomplete="current-password">
+                        <button type="button" onclick="toggleLoginPassword()" class="toggle-password">👁️</button>
+                    </div>
                 </div>
                 <button type="submit" class="submit-btn">
                     <span class="btn-text">Iniciar Sesión</span>
@@ -309,7 +160,6 @@
                 </button>
             </form>
 
-            <!-- Register Form -->
             <form id="registerForm" class="hidden">
                 <div class="form-group">
                     <label class="form-label">Nombre Completo</label>
@@ -321,8 +171,15 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Contraseña</label>
-                    <input type="password" id="registerPassword" class="form-input" required
-                        autocomplete="new-password">
+                    <div class="password-input-wrapper">
+                        <input type="password" id="registerPassword" class="form-input" required autocomplete="new-password" oninput="updateRegisterStrength()">
+                        <button type="button" onclick="toggleRegisterPassword()" class="toggle-password">👁️</button>
+                    </div>
+                    <div class="password-strength">
+                        <div id="registerStrengthBar" class="password-strength-bar"></div>
+                    </div>
+                    <span id="registerStrengthText" class="password-strength-text"></span>
+                    <span class="hint">Usa al menos 8 caracteres, mayúsculas, minúsculas, números y un símbolo.</span>
                 </div>
                 <button type="submit" class="submit-btn">
                     <span class="btn-text">Crear Cuenta</span>
@@ -330,115 +187,143 @@
                 </button>
             </form>
 
-            <!-- Message -->
             <div id="message" class="message hidden"></div>
         </div>
     </div>
 
-    <script>
-        const API_URL = '/api';
+<script>
+    const API_URL = '/api';
 
-        function showTab(tab) {
-            const loginForm = document.getElementById('loginForm');
-            const registerForm = document.getElementById('registerForm');
-            const loginTab = document.getElementById('loginTab');
-            const registerTab = document.getElementById('registerTab');
-            const message = document.getElementById('message');
+    function toggleTheme() {
+        const html = document.documentElement;
+        const current = html.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        document.getElementById('loginThemeToggle').textContent = next === 'dark' ? '☀️' : '🌙';
+    }
+    (function() {
+        const saved = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', saved);
+        const btn = document.getElementById('loginThemeToggle');
+        if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+    })();
 
-            message.classList.add('hidden');
+    function getCSRFToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    }
 
-            if (tab === 'login') {
-                loginForm.classList.remove('hidden');
-                registerForm.classList.add('hidden');
-                loginTab.classList.add('active');
-                registerTab.classList.remove('active');
+    function updateRegisterStrength() {
+        const pwd = document.getElementById('registerPassword').value;
+        const bar = document.getElementById('registerStrengthBar');
+        const text = document.getElementById('registerStrengthText');
+        let score = 0;
+        if (pwd.length >= 8) score++;
+        if (pwd.length >= 12) score++;
+        if (/[A-Z]/.test(pwd)) score++;
+        if (/[a-z]/.test(pwd)) score++;
+        if (/\d/.test(pwd)) score++;
+        if (/[^A-Za-z0-9]/.test(pwd)) score++;
+        const colors = ['#ef4444','#ef4444','#f59e0b','#f59e0b','#22c55e','#22c55e'];
+        const labels = ['','Muy débil','Débil','Regular','Fuerte','Muy fuerte'];
+        bar.style.width = (score / 6 * 100) + '%';
+        bar.style.background = colors[score] || '#22c55e';
+        text.textContent = labels[score] || '';
+        text.style.color = colors[score] || '#22c55e';
+    }
+
+    function toggleLoginPassword() {
+        const input = document.getElementById('loginPassword');
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+    function toggleRegisterPassword() {
+        const input = document.getElementById('registerPassword');
+        input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    function showTab(tab) {
+        document.getElementById('message').classList.add('hidden');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const loginTab = document.getElementById('loginTab');
+        const registerTab = document.getElementById('registerTab');
+        if (tab === 'login') {
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+            loginTab.classList.add('active');
+            registerTab.classList.remove('active');
+        } else {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+            registerTab.classList.add('active');
+            loginTab.classList.remove('active');
+        }
+    }
+
+    function showMessage(text, isError = false) {
+        const message = document.getElementById('message');
+        message.textContent = text;
+        message.className = `message ${isError ? 'error' : 'success'}`;
+        setTimeout(() => message.classList.add('hidden'), 5000);
+    }
+
+    function setButtonLoading(button, loading) {
+        if (loading) button.classList.add('loading');
+        else button.classList.remove('loading');
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const button = e.target.querySelector('.submit-btn');
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+        setButtonLoading(button, true);
+        try {
+            const response = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                showMessage('¡Bienvenido! Redirigiendo...');
+                setTimeout(() => window.location.href = '/dashboard', 1000);
             } else {
-                loginForm.classList.add('hidden');
-                registerForm.classList.remove('hidden');
-                registerTab.classList.add('active');
-                loginTab.classList.remove('active');
+                setButtonLoading(button, false);
+                showMessage(data.detail || 'Error al iniciar sesión', true);
             }
+        } catch (error) {
+            setButtonLoading(button, false);
+            showMessage('Error de conexión', true);
         }
+    });
 
-        function showMessage(text, isError = false) {
-            const message = document.getElementById('message');
-            message.textContent = text;
-            message.className = `message ${isError ? 'error' : 'success'}`;
-            setTimeout(() => message.classList.add('hidden'), 5000);
-        }
-
-        function setButtonLoading(button, loading) {
-            if (loading) {
-                button.classList.add('loading');
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const button = e.target.querySelector('.submit-btn');
+        const full_name = document.getElementById('registerName').value;
+        const email = document.getElementById('registerEmail').value;
+        const password = document.getElementById('registerPassword').value;
+        setButtonLoading(button, true);
+        try {
+            const response = await fetch(`${API_URL}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, full_name })
+            });
+            const data = await response.json();
+            if (response.ok) {
+                setButtonLoading(button, false);
+                showMessage('Cuenta creada exitosamente. Ahora puedes iniciar sesión.');
+                setTimeout(() => showTab('login'), 2000);
             } else {
-                button.classList.remove('loading');
+                setButtonLoading(button, false);
+                showMessage(data.detail || 'Error al registrarse', true);
             }
+        } catch (error) {
+            setButtonLoading(button, false);
+            showMessage('Error de conexión', true);
         }
-
-        // Login
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const button = e.target.querySelector('.submit-btn');
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-
-            setButtonLoading(button, true);
-
-            try {
-                const response = await fetch(`${API_URL}/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    showMessage('¡Bienvenido! Redirigiendo...');
-                    setTimeout(() => window.location.href = '/dashboard', 1000);
-                } else {
-                    setButtonLoading(button, false);
-                    showMessage(data.detail || 'Error al iniciar sesión', true);
-                }
-            } catch (error) {
-                setButtonLoading(button, false);
-                showMessage('Error de conexión', true);
-            }
-        });
-
-        // Register
-        document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const button = e.target.querySelector('.submit-btn');
-            const full_name = document.getElementById('registerName').value;
-            const email = document.getElementById('registerEmail').value;
-            const password = document.getElementById('registerPassword').value;
-
-            setButtonLoading(button, true);
-
-            try {
-                const response = await fetch(`${API_URL}/auth/register`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, full_name })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    setButtonLoading(button, false);
-                    showMessage('Cuenta creada exitosamente. Ahora puedes iniciar sesión.');
-                    setTimeout(() => showTab('login'), 2000);
-                } else {
-                    setButtonLoading(button, false);
-                    showMessage(data.detail || 'Error al registrarse', true);
-                }
-            } catch (error) {
-                setButtonLoading(button, false);
-                showMessage('Error de conexión', true);
-            }
-        });
-    </script>
-</body>
-
-</html>
+    });
+</script>
+{% endblock %}

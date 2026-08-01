@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SecurePasswords | Docs</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07111f;
+      --panel: #101c31;
+      --text: #f3f4f6;
+      --muted: #9ca3af;
+      --accent: #7c3aed;
+      --accent-2: #38bdf8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg), #172554);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.2rem 4rem; }
+    header {
+      display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
+      padding: 1rem 0 2rem;
+    }
+    .brand { font-size: 1.3rem; font-weight: 700; }
+    .pill { display:inline-block; padding: .45rem .8rem; border-radius: 999px; background: rgba(124,58,237,.2); color: #ddd6fe; font-size: .9rem; }
+    .hero { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 24px; padding: 2rem; box-shadow: 0 20px 50px rgba(0,0,0,.2); }
+    .hero h1 { font-size: clamp(2rem, 3vw, 2.8rem); margin: 0 0 .8rem; }
+    .hero p { color: var(--muted); font-size: 1.05rem; line-height: 1.7; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1.4rem; }
+    .card { background: var(--panel); border-radius: 18px; padding: 1.1rem; border: 1px solid rgba(255,255,255,.08); }
+    .card h2 { margin-top: 0; font-size: 1.05rem; }
+    .card ul { padding-left: 1rem; color: var(--muted); }
+    .card code { color: #e9d5ff; }
+    .lang { margin-top: 1.2rem; color: var(--muted); font-size: .95rem; }
+    a { color: #93c5fd; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">🔐 SecurePasswords</div>
+      <span class="pill">v1.0.1 · UI + Docs</span>
+    </header>
+
+    <section class="hero">
+      <h1>SecurePasswords v1.0.1</h1>
+      <p>Una mejora inicial para hacer el proyecto más claro, más usable y más preparado para compartir en GitHub. Esta versión enfoca la experiencia visual, la documentación y la base para crecer.</p>
+      <div class="lang">English / Español · bilingual documentation</div>
+    </section>
+
+    <div class="grid">
+      <div class="card">
+        <h2>✅ Qué se mejoró</h2>
+        <ul>
+          <li>Interfaz más limpia y ordenada</li>
+          <li>Mejor estructura del backend</li>
+          <li>Seguridad básica reforzada</li>
+          <li>Documentación para GitHub Pages</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>🛠️ Cambios principales</h2>
+        <ul>
+          <li>Home más legible y menos cargado</li>
+          <li>Sección de docs para explicar cambios</li>
+          <li>Preparación para versión pública</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h2>📚 Estado</h2>
+        <ul>
+          <li>UI inicial mejorada</li>
+          <li>Docs en español e inglés</li>
+          <li>Próximos pasos: más módulos y refinamiento</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

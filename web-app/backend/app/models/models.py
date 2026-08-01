@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, String, Integer, ForeignKey, DateTime, Enum as SQLEnum
+from sqlalchemy import Boolean, Column, String, Integer, ForeignKey, DateTime, Enum as SQLEnum, Table, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
@@ -7,6 +7,13 @@ from database import Base
 
 def generate_uuid():
     return str(uuid.uuid4())
+
+# Tabla pivote para relación muchos a muchos entre credenciales y etiquetas
+credential_tags = Table(
+    'credential_tags', Base.metadata,
+    Column('credential_id', String, ForeignKey('credentials.id', ondelete='CASCADE'), primary_key=True),
+    Column('tag_id', String, ForeignKey('tags.id', ondelete='CASCADE'), primary_key=True)
+)
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
@@ -44,6 +51,19 @@ class Organization(Base):
     users = relationship("User", back_populates="organization", foreign_keys="User.organization_id")
     credentials = relationship("Credential", back_populates="organization")
 
+class Tag(Base):
+    __tablename__ = "tags"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String, nullable=False)
+    color = Column(String, default="#6366f1")
+    organization_id = Column(String, ForeignKey("organizations.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    organization = relationship("Organization")
+    credentials = relationship("Credential", secondary=credential_tags, back_populates="tags_rel")
+
+
 class Credential(Base):
     __tablename__ = "credentials"
     
@@ -52,11 +72,16 @@ class Credential(Base):
     username = Column(String, nullable=False)
     password_encrypted = Column(String, nullable=False)
     token_encrypted = Column(String)
+    password_hash = Column(String)  # SHA-256 para detectar duplicados
     port = Column(Integer)
     comment = Column(String)
     created_by = Column(String, ForeignKey("users.id"))
     organization_id = Column(String, ForeignKey("organizations.id"))
+    folder = Column(String, default="", index=True)
+    is_favorite = Column(Boolean, default=False)
     is_shared = Column(Boolean, default=False)
+    is_deleted = Column(Boolean, default=False, index=True)
+    deleted_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -64,6 +89,7 @@ class Credential(Base):
     created_by_user = relationship("User", back_populates="credentials", foreign_keys=[created_by])
     organization = relationship("Organization", back_populates="credentials")
     permissions = relationship("CredentialPermission", back_populates="credential", cascade="all, delete-orphan")
+    tags_rel = relationship("Tag", secondary=credential_tags, back_populates="credentials")
 
 class CredentialPermission(Base):
     __tablename__ = "credential_permissions"

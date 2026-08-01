@@ -1,449 +1,191 @@
-<!DOCTYPE html>
-<html lang="es">
+{% extends "layout.html" %}
+{% block title %}Terminal SSH - Gestor{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminal SSH - Gestor</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
-    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
-    <style>
-        body {
-            font-family: var(--font-sans);
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            margin: 0;
-        }
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+<script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+<style>
+    .page-title { font-size: 2.5rem; font-weight: 800; color: var(--color-gray-900); margin-bottom: 2rem; }
+    #credentialSelector {
+        background: var(--color-white);
+        border-radius: var(--radius-xl);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-md);
+        margin-bottom: 1.5rem;
+    }
+    #credentialSelector h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--color-gray-900);
+        margin-bottom: 1rem;
+    }
+    #credentialsList {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+    .cred-btn {
+        background: linear-gradient(135deg, rgba(124,58,237,0.05) 0%, rgba(124,58,237,0.1) 100%);
+        border: 2px solid transparent;
+        padding: 1rem;
+        border-radius: var(--radius-lg);
+        text-align: left;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        font-family: var(--font-sans);
+    }
+    .cred-btn:hover {
+        border-color: var(--color-primary);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    .cred-btn .host-name { font-weight: 700; color: var(--color-gray-900); margin-bottom: 0.25rem; }
+    .cred-btn .host-addr { font-size: 0.875rem; color: var(--color-gray-600); font-family: var(--font-mono); }
 
-        .navbar {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: var(--shadow-md);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+    #terminalContainer {
+        background: #1a1a2e;
+        border-radius: var(--radius-xl);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-xl);
+    }
+    .terminal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .connection-info { color: #4ade80; font-family: var(--font-mono); font-size: 0.9rem; }
+    .disconnect-btn {
+        background: #ef4444; color: white;
+        border: none; padding: 0.5rem 1rem;
+        border-radius: var(--radius-md);
+        font-weight: 600; cursor: pointer;
+        transition: all var(--transition-base);
+    }
+    .disconnect-btn:hover { background: #dc2626; transform: translateY(-1px); }
+    #terminal { height: 500px; }
+    .empty-state {
+        text-align: center; padding: 2rem; color: var(--color-gray-600);
+        grid-column: 1 / -1;
+    }
+    .hidden { display: none !important; }
+</style>
+{% endblock %}
 
-        .navbar-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 4rem;
-        }
+{% block content %}
+<h1 class="page-title">Terminal SSH</h1>
 
-        .navbar-brand {
-            font-size: 1.25rem;
-            font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+<div id="credentialSelector">
+    <h3>Selecciona una credencial para conectar</h3>
+    <div id="credentialsList"></div>
+</div>
 
-        .navbar-user {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .user-name {
-            color: var(--color-gray-700);
-            font-weight: 600;
-        }
-
-        .logout-btn {
-            padding: 0.5rem 1.25rem;
-            background: var(--gradient-primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-lg);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--transition-base);
-        }
-
-        .logout-btn:hover {
-            box-shadow: var(--shadow-md), var(--shadow-glow);
-            transform: translateY(-2px);
-        }
-
-        .app-layout {
-            display: flex;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .sidebar {
-            width: 280px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            min-height: calc(100vh - 4rem);
-            padding: 2rem 0;
-            box-shadow: var(--shadow-md);
-        }
-
-        .sidebar-nav {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            padding: 0 1rem;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem 1.25rem;
-            color: var(--color-gray-700);
-            text-decoration: none;
-            border-radius: var(--radius-lg);
-            transition: all var(--transition-base);
-            font-weight: 500;
-        }
-
-        .nav-link:hover {
-            background: var(--color-gray-100);
-            transform: translateX(4px);
-        }
-
-        .nav-link.active {
-            background: var(--gradient-primary);
-            color: white;
-            box-shadow: var(--shadow-md);
-        }
-
-        .nav-icon {
-            font-size: 1.5rem;
-        }
-
-        .main-content {
-            flex: 1;
-            padding: 2rem;
-        }
-
-        .page-title {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: var(--color-gray-900);
-            margin-bottom: 2rem;
-        }
-
-        /* Toast Notifications */
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: white;
-            padding: 1rem 1.5rem;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-lg);
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            transform: translateY(100px);
-            opacity: 0;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1000;
-        }
-
-        .toast.show {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
-        .toast.success {
-            border-left: 4px solid var(--color-success);
-        }
-
-        .toast.error {
-            border-left: 4px solid var(--color-error);
-        }
-
-        .toast-content {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .toast-icon {
-            font-size: 1.25rem;
-        }
-
-        .toast-message {
-            font-weight: 500;
-            color: var(--color-gray-800);
-        }
-    </style>
-</head>
-
-<body>
-    <nav class="navbar">
-        <div class="navbar-content">
-            <div class="navbar-brand"><span>🔐</span> Gestor de Contraseñas</div>
-            <div class="navbar-user">
-                <span class="user-name" id="userName"></span>
-                <button onclick="logout()" class="logout-btn">Cerrar Sesión</button>
-            </div>
-        </div>
-    </nav>
-
-    <div class="app-layout">
-        <aside class="sidebar">
-            <nav class="sidebar-nav">
-                <a href="/dashboard" class="nav-link"><span class="nav-icon">📊</span><span>Dashboard</span></a>
-                <a href="/passwords" class="nav-link"><span class="nav-icon">🔑</span><span>Contraseñas</span></a>
-                <a href="/ssh" class="nav-link active"><span class="nav-icon">💻</span><span>Terminal SSH</span></a>
-                <a href="/admin" id="adminLink" class="nav-link" style="display: none;"><span
-                        class="nav-icon">⚙️</span><span>Administración</span></a>
-            </nav>
-        </aside>
-
-        <main class="main-content">
-            <h1 class="page-title">Terminal SSH</h1>
-
-            <!-- Selector de credencial -->
-            <div id="credentialSelector" class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h3 class="text-xl font-bold mb-4">Selecciona una credencial para conectar</h3>
-                <div id="credentialsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Se llenará dinámicamente -->
-                </div>
-            </div>
-
-            <!-- Terminal -->
-            <div id="terminalContainer" class="bg-black rounded-lg shadow-lg p-4 hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <span class="text-green-400 font-mono" id="connectionInfo"></span>
-                    <button onclick="disconnectSSH()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-                        Desconectar
-                    </button>
-                </div>
-                <div id="terminal"></div>
-            </div>
-        </main>
+<div id="terminalContainer" class="hidden">
+    <div class="terminal-header">
+        <span class="connection-info" id="connectionInfo">Conectando...</span>
+        <button onclick="disconnectSSH()" class="disconnect-btn">Desconectar</button>
     </div>
+    <div id="terminal"></div>
+</div>
+{% endblock %}
 
-    <script>
-        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.host;
-        const API_URL = `${window.location.protocol}//${host}/api`;
-        const WS_URL = `${protocol}//${host}/api`;
-        // User data from server
-        const user = {{ user | tojson }};
+{% block extra_scripts %}
+<script>
+    const WS_URL = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/api`;
+    const user = {{ user | tojson }};
+    let terminal = null;
+    let websocket = null;
+    let currentSessionId = null;
 
-        // If user is not defined or doesn't have an ID, redirect to login
-        if (!user || !user.id) {
-            window.location.href = '/';
+    async function loadCredentials() {
+        try {
+            const response = await fetch(`${API_URL}/credentials/`, { credentials: 'include' });
+            if (response.ok) {
+                const credentials = await response.json();
+                const sshCredentials = credentials.filter(cred => (cred.user_permissions || {}).can_connect_ssh === true);
+                displayCredentials(sshCredentials);
+            } else if (response.status === 401) logout();
+        } catch (error) {
+            console.error('Error:', error);
         }
+    }
 
-        document.getElementById('userName').textContent = user.full_name || user.email;
-
-        // Show admin link if user is admin
-        if (user.role === 'admin') {
-            document.getElementById('adminLink').style.display = 'flex';
+    function displayCredentials(credentials) {
+        const container = document.getElementById('credentialsList');
+        if (credentials.length === 0) {
+            container.innerHTML = `<div class="empty-state"><p style="font-size:1.25rem;margin-bottom:0.5rem;">🔐 No hay credenciales SSH disponibles</p><p style="font-size:0.875rem;">Solicita al administrador que comparta credenciales con permiso SSH</p></div>`;
+            return;
         }
+        container.innerHTML = credentials.map(cred =>
+            `<button onclick="connectSSH('${cred.id}')" class="cred-btn">
+                <div class="host-name">${cred.comment || cred.host}</div>
+                <div class="host-addr">${cred.username}@${cred.host}:${cred.port || 22}</div>
+            </button>`
+        ).join('');
+    }
 
-        let terminal = null;
-        let websocket = null;
-        let currentSessionId = null;
-
-        async function loadCredentials() {
-            try {
-                const response = await fetch(`${API_URL}/credentials/`, {
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    const credentials = await response.json();
-
-                    // Filtrar solo credenciales con permiso SSH
-                    const sshCredentials = credentials.filter(cred => {
-                        const perms = cred.user_permissions || {};
-                        return perms.can_connect_ssh === true;
-                    });
-
-                    displayCredentials(sshCredentials);
-                } else if (response.status === 401) {
-                    logout();
-                } else {
-                    // console.error('Error loading credentials:', response.status); // Removed as per instruction
-                }
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
-
-        function displayCredentials(credentials) {
-            const container = document.getElementById('credentialsList');
-
-            if (credentials.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 2rem; color: var(--color-gray-600);">
-                        <p style="font-size: 1.25rem; margin-bottom: 0.5rem;">🔐 No hay credenciales SSH disponibles</p>
-                        <p style="font-size: 0.875rem;">Solicita al administrador que comparta credenciales con permiso SSH</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = credentials.map(cred => `
-                <button onclick="connectSSH('${cred.id}')" class="bg-purple-50 hover:bg-purple-100 p-4 rounded-lg text-left transition">
-                    <p class="font-bold text-gray-800">${cred.comment || cred.host}</p>
-                    <p class="text-sm text-gray-600">${cred.username}@${cred.host}:${cred.port || 22}</p>
-                </button>
-            `).join('');
-        }
-
-        // Toast notification function
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = `
-                <div class="toast-content">
-                    <span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span>
-                    <span class="toast-message">${message}</span>
-                </div>
-            `;
-            document.body.appendChild(toast);
-
-            // Trigger animation
-            requestAnimationFrame(() => {
-                toast.classList.add('show');
+    async function connectSSH(credentialId) {
+        showToast('Iniciando conexión SSH...');
+        try {
+            const response = await fetch(`${API_URL}/ssh/connect`, {
+                method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken()},
+                credentials: 'include',
+                body: JSON.stringify({ credential_id: credentialId })
             });
-
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    document.body.removeChild(toast);
-                }, 300);
-            }, 3000);
-        }
-
-        async function connectSSH(credentialId) {
-            try {
-                showToast('Iniciando conexión SSH...', 'success');
-
-                // Solicitar conexión
-                const response = await fetch(`${API_URL}/ssh/connect`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include',
-                    body: JSON.stringify({ credential_id: credentialId })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    currentSessionId = data.session_id;
-
-                    // Ocultar selector y mostrar terminal
-                    document.getElementById('credentialSelector').classList.add('hidden');
-                    document.getElementById('terminalContainer').classList.remove('hidden');
-
-                    // Inicializar terminal
-                    initTerminal(data.session_id);
-                } else {
-                    const error = await response.json();
-                    showToast(error.detail || 'Error al conectar SSH', 'error');
-                }
-            } catch (error) {
-                console.error(error);
-                showToast('Error de conexión con el servidor', 'error');
+            if (response.ok) {
+                const data = await response.json();
+                currentSessionId = data.session_id;
+                document.getElementById('credentialSelector').classList.add('hidden');
+                document.getElementById('terminalContainer').classList.remove('hidden');
+                initTerminal(data.session_id);
+            } else {
+                const err = await response.json();
+                showToast(err.detail || 'Error al conectar SSH', 'error');
             }
+        } catch (error) {
+            showToast('Error de conexión con el servidor', 'error');
         }
+    }
 
-        function initTerminal(sessionId) {
-            // Crear terminal xterm.js
-            terminal = new Terminal({
-                cursorBlink: true,
-                fontSize: 14,
-                fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-                theme: {
-                    background: '#000000',
-                    foreground: '#00ff00'
-                }
-            });
-
-            const fitAddon = new FitAddon.FitAddon();
-            terminal.loadAddon(fitAddon);
-            terminal.open(document.getElementById('terminal'));
-            fitAddon.fit();
-
-            // Conectar WebSocket
-            websocket = new WebSocket(`${WS_URL}/ssh/terminal/${sessionId}`);
-
-            websocket.onopen = () => {
-                document.getElementById('connectionInfo').textContent = 'Conectado ✓';
-
-                // Enviar input del terminal al WebSocket
-                terminal.onData(data => {
-                    if (websocket.readyState === WebSocket.OPEN) {
-                        websocket.send(data);
-                    }
-                });
-            };
-
-            websocket.onmessage = (event) => {
-                terminal.write(event.data);
-            };
-
-            websocket.onerror = () => {
-                terminal.write('\r\n\x1b[1;31mError de conexión\x1b[0m\r\n');
-            };
-
-            websocket.onclose = () => {
-                terminal.write('\r\n\x1b[1;33mConexión cerrada\x1b[0m\r\n');
-                document.getElementById('connectionInfo').textContent = 'Desconectado';
-            };
-        }
-
-        function disconnectSSH() {
-            if (websocket) {
-                websocket.close();
-            }
-            if (terminal) {
-                terminal.dispose();
-                terminal = null;
-            }
-
-            // Mostrar selector y ocultar terminal
-            document.getElementById('terminalContainer').classList.add('hidden');
-            document.getElementById('credentialSelector').classList.remove('hidden');
-
-            currentSessionId = null;
-            showToast('Desconectado del servidor SSH', 'success');
-        }
-
-        async function logout() {
-            await fetch(`${API_URL}/auth/logout`, {
-                method: 'POST',
-                credentials: 'include'
-            });
-            window.location.href = '/';
-        }
-
-        // Cargar credenciales y verificar auto-conexión al cargar la página
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCredentials();
-
-            // Auto-conectar si viene desde passwords page
-            const urlParams = new URLSearchParams(window.location.search);
-            const connectId = urlParams.get('connect');
-            if (connectId) {
-                // Pequeño delay para asegurar que el DOM esté listo
-                setTimeout(() => {
-                    connectSSH(connectId);
-                }, 100);
-            }
+    function initTerminal(sessionId) {
+        terminal = new Terminal({
+            cursorBlink: true,
+            fontSize: 14,
+            fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+            theme: { background: '#1a1a2e', foreground: '#00ff00' }
         });
-    </script>
-</body>
+        const fitAddon = new FitAddon.FitAddon();
+        terminal.loadAddon(fitAddon);
+        terminal.open(document.getElementById('terminal'));
+        fitAddon.fit();
 
-</html>
+        websocket = new WebSocket(`${WS_URL}/ssh/terminal/${sessionId}`);
+        websocket.onopen = () => {
+            document.getElementById('connectionInfo').textContent = 'Conectado ✓';
+            terminal.onData(data => { if (websocket.readyState === WebSocket.OPEN) websocket.send(data); });
+        };
+        websocket.onmessage = (event) => terminal.write(event.data);
+        websocket.onerror = () => terminal.write('\r\n\x1b[1;31mError de conexión\x1b[0m\r\n');
+        websocket.onclose = () => {
+            terminal.write('\r\n\x1b[1;33mConexión cerrada\x1b[0m\r\n');
+            document.getElementById('connectionInfo').textContent = 'Desconectado';
+        };
+    }
+
+    function disconnectSSH() {
+        if (websocket) { websocket.close(); websocket = null; }
+        if (terminal) { terminal.dispose(); terminal = null; }
+        document.getElementById('terminalContainer').classList.add('hidden');
+        document.getElementById('credentialSelector').classList.remove('hidden');
+        currentSessionId = null;
+        showToast('Desconectado del servidor SSH');
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCredentials();
+        const connectId = new URLSearchParams(window.location.search).get('connect');
+        if (connectId) setTimeout(() => connectSSH(connectId), 100);
+    });
+</script>
+{% endblock %}

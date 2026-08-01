@@ -75,9 +75,8 @@ def update_user(
             detail="No tienes permiso para modificar este usuario"
         )
     
-    # Actualizar campos
-    update_data = user_data.dict(exclude_unset=True)
-    
+    update_data = user_data.model_dump(exclude_unset=True)
+
     for key, value in update_data.items():
         setattr(user, key, value)
     
@@ -134,7 +133,7 @@ def export_credentials(
         for cred in credentials:
             try:
                 password = decrypt_password(cred.password_encrypted)
-            except:
+            except Exception:
                 password = "[Error desencriptando]"
                 
             data.append({

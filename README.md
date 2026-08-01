@@ -1,64 +1,64 @@
-# 🔐 Gestor de Contraseñas 
+# 🔐 SecurePasswords
 
-Aplicación  construida en Python , SQLite para gestionar contraseñas de manera local y segura. Permite iniciar sesión, guardar múltiples accesos con detalles personalizados,  exportar a Excel, y cerrar sesión.
+SecurePasswords is a local and secure password manager built with Python and SQLite. It allows users to store credentials, manage access, and keep a simple workflow for personal or small-team use.
+
+## Español
+
+Aplicación construida en Python y SQLite para gestionar contraseñas de forma local y segura. Permite guardar accesos, organizar credenciales y mantener un flujo simple para uso personal o en equipos pequeños.
 
 ---
 
-## 🚀 Funcionalidades
+## ✨ Highlights
 
--   Registro e inicio de sesión con SQLite
--   CRUD de accesos (host, usuario, contraseña, token, puerto, comentario)
--   Exportación de datos a xlsx
--   Listado por comentarios para mejor identificación
--   Opción para cerrar sesión y volver a login
+- Registro e inicio de sesión con seguridad básica
+- Gestión de credenciales con información útil
+- Mejor estructura inicial del backend
+- Documentación preparada para GitHub Pages
+- Preparación para una versión más profesional en futuras releases
 
 ---
 
 ## 🛠️ Requisitos
 
--   Dockerfile
--   Docker-compose
+- Python 3.10+
+- Docker / Docker Compose (opcional para la web app)
 
 ---
 
-## 📦 Instalación
+## 🚀 Instalación
 
-1. Clona este repositorio:
+```bash
+git clone https://github.com/Gabriel3002-maker/SecurePasswords.git
+cd SecurePasswords
+cd web-app
+docker compose up -d
+```
 
-    ```bash
-    git clone https://github.com/tuusuario/gestor-passwords.git
-    cd gestor-passwords
-    cd web-app
+Luego abre la aplicación en tu navegador en:
 
+```text
+http://localhost:9000
+```
 
-    ```
+---
 
-2. Ahora necesitar levantar el contenedor
+## 📚 Documentación
 
-    ```bash
+- Landing para GitHub Pages: [docs/index.html](docs/index.html)
+- Documentación bilingüe: [docs/README.md](docs/README.md)
 
-    docker compose up -d
-    ```
+---
 
-## 📦 Ejecución
+## 🔄 Versión actual
 
-1. Luego de levantar correctamente el contendor accede a tu ip:9000:
+- v1.0.1
+- Mejoras iniciales de UI
+- Reorganización básica del backend
+- Refuerzo de seguridad para contraseñas
 
-2. Termina la configuración y pruebalo:
+---
 
-## 📦 Mejoras y Contribuciones
+## 🤝 Contribuciones
 
-1. Si vas a aportar con alguna mejora trabaja con lowercase y fomateadores
-
-2. Está aplicación esta hecha para ser simple ,  útil y segura.
-
-3. A las personas que usen el software actualmente es gratuito por fa si ven errores  reportenlos al correo para trabajar en los mismos y mejorar la app
-
-## 📦 Documentacion Tecnica
-
-1. Actualmente el backend se esta trabajando con fastapi en localhost:9000/docs tienes la  documentacion de cada endpoint  con Swagger
-
-2. La carpeta principal a trabajar o mejor es web-app alli tenemos el backend y los archivos html
-
-3. Actualmente no contamos con Test por fa si deseas ayudar crear un nuevo fork para aplicar los mismos
+Las contribuciones son bienvenidas. Si quieres colaborar, puedes abrir issues o pull requests con mejoras, documentación o nuevas funcionalidades.
 

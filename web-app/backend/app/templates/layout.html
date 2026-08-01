@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token or '' }}">
+    <title>{% block title %}Gestor de Contraseñas{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% if user %}
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <span>🔐</span>
+                <span>Gestor de Contraseñas</span>
+            </div>
+            <div class="navbar-user">
+                <button id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+                <span class="user-name" id="userName">{{ user.full_name or user.email }}</span>
+                <button onclick="logout()" class="logout-btn">Cerrar Sesión</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="/dashboard" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/passwords" class="nav-link {% if active_page == 'passwords' %}active{% endif %}">
+                    <span class="nav-icon">🔑</span>
+                    <span>Contraseñas</span>
+                </a>
+                <a href="/ssh" class="nav-link {% if active_page == 'ssh' %}active{% endif %}">
+                    <span class="nav-icon">💻</span>
+                    <span>Terminal SSH</span>
+                </a>
+                {% if user.role == 'admin' %}
+                <a href="/admin" class="nav-link {% if active_page == 'admin' %}active{% endif %}">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Administración</span>
+                </a>
+                {% endif %}
+            </nav>
+        </aside>
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% else %}
+    {% block full_content %}{% endblock %}
+    {% endif %}
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script>
+        const API_URL = `${window.location.protocol}//${window.location.host}/api`;
+
+        function getCSRFToken() {
+            return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span>
+                <span class="toast-message">${message}</span>
+            `;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        async function logout() {
+            await fetch(`${API_URL}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {'X-CSRF-Token': getCSRFToken()}
+            });
+            window.location.href = '/';
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            document.getElementById('themeToggle').textContent = next === 'dark' ? '☀️' : '🌙';
+        }
+
+        (function initTheme() {
+            const saved = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+            const btn = document.getElementById('themeToggle');
+            if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+        })();
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

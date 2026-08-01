@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional, List
 from datetime import datetime
 from enum import Enum
 
@@ -46,7 +46,10 @@ class CredentialBase(BaseModel):
     username: str
     port: Optional[int] = None
     comment: Optional[str] = None
+    folder: str = ""
+    is_favorite: bool = False
     is_shared: bool = False
+    tags: List[str] = []  # Nombres de etiquetas
 
 class CredentialCreate(CredentialBase):
     password: str
@@ -59,6 +62,8 @@ class CredentialUpdate(BaseModel):
     token: Optional[str] = None
     port: Optional[int] = None
     comment: Optional[str] = None
+    folder: Optional[str] = None
+    is_favorite: Optional[bool] = None
     is_shared: Optional[bool] = None
 
 class CredentialResponse(CredentialBase):
@@ -67,8 +72,10 @@ class CredentialResponse(CredentialBase):
     organization_id: Optional[str]
     created_at: datetime
     updated_at: datetime
-    user_permissions: Optional[dict] = None  # Permisos del usuario actual
-    # No incluimos password por seguridad
+    is_deleted: bool = False
+    deleted_at: Optional[datetime] = None
+    user_permissions: Optional[dict] = None
+    password_hash: Optional[str] = None  # SHA-256 para detección de duplicados
     
     class Config:
         from_attributes = True
@@ -111,6 +118,63 @@ class OrganizationResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+# Tag Schemas
+class TagCreate(BaseModel):
+    name: str
+    color: str = "#6366f1"
+
+class TagResponse(BaseModel):
+    id: str
+    name: str
+    color: str
+    organization_id: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# Audit Log Schemas
+class AuditLogResponse(BaseModel):
+    id: str
+    user_id: str
+    action: str
+    resource_type: Optional[str] = None
+    resource_id: Optional[str] = None
+    details: Optional[str] = None
+    ip_address: Optional[str] = None
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+# Password Generator Schemas
+class GeneratePasswordRequest(BaseModel):
+    length: int = Field(default=16, ge=6, le=128)
+    uppercase: bool = True
+    lowercase: bool = True
+    numbers: bool = True
+    symbols: bool = True
+
+class GeneratePasswordResponse(BaseModel):
+    password: str
+
+# Change Password Schema
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+# Duplicate/Weak Password Schemas
+class DuplicateGroup(BaseModel):
+    password_hash: str
+    count: int
+    credentials: List[dict]
+
+class WeakPasswordResponse(BaseModel):
+    id: str
+    host: str
+    username: str
+    issues: List[str]
 
 # SSH Schemas
 class SSHConnectionRequest(BaseModel):

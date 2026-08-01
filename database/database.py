@@ -93,10 +93,10 @@ def delete_password(entry_id):
     cursor.execute("DELETE FROM passwords WHERE id = ?", (entry_id,))
     conn.commit()
 
-def update_password(id, host, user, password, token, port, comment):
+def update_password(entry_id, host, username, password, token, port, comment):
     cursor.execute('''
         UPDATE passwords
-        SET host = ?, user = ?, password = ?, token = ?, port = ?, comment = ?
+        SET host = ?, username = ?, password = ?, token = ?, port = ?, comment = ?
         WHERE id = ?
-    ''', (host, user, password, token, port, comment, id))
+    ''', (host, username, password, token, port, comment, entry_id))
     conn.commit()
