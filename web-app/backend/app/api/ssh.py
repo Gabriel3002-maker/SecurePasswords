@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket
 from sqlalchemy.orm import Session
 from database import get_db
 from models.models import User, Credential, SSHSession, CredentialPermission
@@ -63,72 +63,8 @@ async def connect_ssh(
 
 @router.websocket("/terminal/{session_id}")
 async def ssh_terminal(websocket: WebSocket, session_id: str):
-    """WebSocket para terminal SSH interactivo"""
-    await websocket.accept()
-    
-    # Obtener sesión de la base de datos
-    db = next(get_db())
-    ssh_session = db.query(SSHSession).filter(SSHSession.id == session_id).first()
-    
-    if not ssh_session or not ssh_session.is_active:
-        await websocket.send_text("\r\n❌ Error: Sesión no válida o expirada\r\n")
-        await websocket.close(code=1008, reason="Sesión no válida")
-        return
-    
-    # Obtener credencial
-    credential = db.query(Credential).filter(Credential.id == ssh_session.credential_id).first()
-    
-    if not credential:
-        await websocket.send_text("\r\n❌ Error: Credencial no encontrada\r\n")
-        await websocket.close(code=1008, reason="Credencial no encontrada")
-        return
-    
-    try:
-        # Enviar mensaje de conexión
-        await websocket.send_text(f"\r\n🔄 Conectando a {credential.username}@{credential.host}:{credential.port or 22}...\r\n")
-        
-        # Conectar SSH
-        client, error = await SSHManager.connect(credential)
-        
-        if error:
-            # Enviar error al cliente
-            await websocket.send_text(f"\r\n{error}\r\n")
-            await websocket.send_text("\r\n💡 Sugerencias:\r\n")
-            await websocket.send_text("   • Verifica que el usuario y contraseña sean correctos\r\n")
-            await websocket.send_text("   • Asegúrate de que el servidor SSH esté accesible\r\n")
-            await websocket.send_text("   • Verifica el puerto (por defecto: 22)\r\n")
-            await websocket.close(code=1011, reason=error)
-            
-            # Marcar sesión como terminada
-            ssh_session.is_active = False
-            ssh_session.ended_at = datetime.utcnow()
-            db.commit()
-            db.close()
-            return
-        
-        # Conexión exitosa
-        await websocket.send_text(f"\r\n✅ Conectado exitosamente a {credential.host}\r\n")
-        await websocket.send_text("━" * 60 + "\r\n\r\n")
-        
-        # Manejar terminal
-        await SSHManager.handle_terminal(websocket, session_id, client)
-        
-    except WebSocketDisconnect:
-        print(f"WebSocket desconectado para sesión {session_id}")
-    except Exception as e:
-        error_msg = f"❌ Error inesperado: {str(e)}"
-        print(error_msg)
-        try:
-            await websocket.send_text(f"\r\n{error_msg}\r\n")
-            await websocket.close(code=1011, reason=str(e))
-        except Exception:
-            pass
-    finally:
-        # Marcar sesión como terminada
-        ssh_session.is_active = False
-        ssh_session.ended_at = datetime.utcnow()
-        db.commit()
-        db.close()
+    """WebSocket para terminal SSH interactivo (multi-sesión)."""
+    await SSHManager.handle_ws(websocket, session_id)
 
 @router.post("/disconnect/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 def disconnect_ssh(

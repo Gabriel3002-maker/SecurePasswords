@@ -69,7 +69,7 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
         ) from exc
 
 @router.post("/login", response_model=Token)
-def login(response: Response, credentials: UserLogin, db: Session = Depends(get_db)):
+def login(response: Response, request: Request, credentials: UserLogin, db: Session = Depends(get_db)):
     """Iniciar sesión"""
     _check_rate_limit(credentials.email)
 
@@ -92,6 +92,12 @@ def login(response: Response, credentials: UserLogin, db: Session = Depends(get_
     access_token = create_user_token(user)
     _set_auth_cookie(response, access_token)
     csrf = _set_csrf_cookie(response)
+
+    from core import telegram as telegram_service
+    try:
+        telegram_service.notify_login(credentials.email, request.client.host if request.client else None)
+    except Exception:
+        pass
 
     return {
         "access_token": access_token,

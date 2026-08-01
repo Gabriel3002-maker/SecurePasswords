@@ -9,6 +9,7 @@ from api import auth, credentials, ssh, admin
 from config import get_settings
 from core.security import decode_token
 from core.i18n import normalize_locale, get_text, get_translation_map
+from core import telegram as telegram_service
 from models.models import User, UserRole
 from sqlalchemy.orm import Session
 import os
@@ -71,8 +72,9 @@ app.include_router(ssh.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 
 # Importar router de setup (lazy import para evitar circular dependencies si fuera el caso)
-from api import setup
+from api import setup, recovery
 app.include_router(setup.router, prefix="/api")
+app.include_router(recovery.router, prefix="/api")
 
 # Middleware para verificar configuración
 @app.middleware("http")
@@ -97,7 +99,7 @@ async def check_configuration(request: Request, call_next):
 
     is_configured = env_configured and admin_exists
 
-    if not is_configured and request.url.path not in {"/setup"} and not request.url.path.startswith("/api/setup") and not request.url.path.startswith("/api/auth/"):
+    if not is_configured and request.url.path not in {"/setup"} and not request.url.path.startswith("/api/setup") and not request.url.path.startswith("/api/auth/") and not request.url.path.startswith("/api/i18n"):
         return RedirectResponse(url="/setup")
 
     if is_configured and request.url.path in {"/setup"}:
@@ -143,7 +145,7 @@ def get_current_user_from_cookie(request: Request, db: Optional[Session] = None)
 
 # Inicializar base de datos al arrancar
 @app.on_event("startup")
-def on_startup():
+async def on_startup():
     # Solo inicializar si está configurado
     # env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
     # if os.path.exists(env_path):
@@ -161,6 +163,8 @@ def on_startup():
     logger.info(f"🚀 {settings.app_name} iniciado correctamente")
     logger.info(f"📂 Directorio de trabajo: {os.getcwd()}")
     logger.info(f"🌐 Accede a: http://localhost:9000")
+
+    telegram_service.start_polling()
 
 def _template_params(request: Request, user: dict | None = None, active_page: str = "") -> dict:
     """Construir contexto común para todas las plantillas."""
@@ -191,6 +195,19 @@ def _require_auth(request: Request) -> dict | None:
 @app.get("/setup")
 async def setup_page(request: Request):
     return templates.TemplateResponse("setup.html", _template_params(request))
+
+
+@app.get("/recovery")
+async def recovery_page(request: Request):
+    params = _template_params(request)
+    csrf = params["csrf_token"]
+    if not csrf:
+        import secrets
+        csrf = secrets.token_hex(32)
+        params["csrf_token"] = csrf
+    response = templates.TemplateResponse("recovery.html", params)
+    response.set_cookie("csrf_token", value=csrf, httponly=True, max_age=3600, samesite="lax")
+    return response
 
 @app.get("/")
 async def home(request: Request):

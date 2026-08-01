@@ -132,3 +132,20 @@ class SSHSession(Base):
     started_at = Column(DateTime, default=datetime.utcnow)
     ended_at = Column(DateTime)
     is_active = Column(Boolean, default=True)
+
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class RecoveryCode(Base):
+    __tablename__ = "recovery_codes"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    purpose = Column(String, default="master_password")
+    code_hash = Column(String, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
