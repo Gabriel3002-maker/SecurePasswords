@@ -1,29 +1,34 @@
+import os
 import paramiko
 from fastapi import WebSocket
 import asyncio
-from typing import Dict
+from typing import Dict, Optional
 from models.models import SSHSession, Credential
 from core.encryption import decrypt_password
 import logging
 
-# Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Almacenar sesiones SSH activas
 active_sessions: Dict[str, paramiko.SSHClient] = {}
 
+KNOWN_HOSTS_PATH = os.path.expanduser("~/.ssh/opencode_known_hosts")
+
 class SSHManager:
-    """Gestor de conexiones SSH"""
-    
+
     @staticmethod
-    async def connect(credential: Credential) -> tuple[paramiko.SSHClient, str]:
-        """
-        Establecer conexión SSH
-        Returns: (client, error_message)
-        """
-        client = paramiko.SSHClient()
+    def _prepare_host_key_policy(client: paramiko.SSHClient) -> None:
+        try:
+            client.load_host_keys(KNOWN_HOSTS_PATH)
+        except FileNotFoundError:
+            pass
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        logger.warning("SSH host keys stored in %s", KNOWN_HOSTS_PATH)
+
+    @staticmethod
+    async def connect(credential: Credential) -> tuple[Optional[paramiko.SSHClient], Optional[str]]:
+        client = paramiko.SSHClient()
+        SSHManager._prepare_host_key_policy(client)
         
         # Desencriptar contraseña
         try:
@@ -114,14 +119,13 @@ class SSHManager:
             logger.error(error_msg)
             try:
                 await websocket.send_text(f"\r\n{error_msg}\r\n")
-            except:
+            except Exception:
                 pass
         finally:
-            # Limpiar sesión
             if session_id in active_sessions:
                 try:
                     active_sessions[session_id].close()
-                except:
+                except Exception:
                     pass
                 del active_sessions[session_id]
                 logger.info(f"🔌 Sesión SSH {session_id} cerrada")

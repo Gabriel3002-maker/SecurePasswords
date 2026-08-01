@@ -1,705 +1,322 @@
-<!DOCTYPE html>
-<html lang="es">
+{% extends "layout.html" %}
+{% block title %}{{ t('admin.title') }} - {{ t('auth.page_title') }}{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administración - Gestor</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <style>
-        body {
-            font-family: var(--font-sans);
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            margin: 0;
-        }
+{% block extra_head %}
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .page-title { font-size: 2.5rem; font-weight: 800; color: var(--color-gray-900); }
+    .toolbar { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .toolbar-btn {
+        padding: 0.75rem 1.25rem;
+        border: none; border-radius: var(--radius-lg);
+        font-weight: 700; cursor: pointer;
+        transition: all var(--transition-base);
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .toolbar-btn.primary { background: var(--gradient-primary); color: white; box-shadow: var(--shadow-md); }
+    .toolbar-btn.primary:hover { box-shadow: var(--shadow-lg), var(--shadow-glow); transform: translateY(-2px); }
+    .toolbar-btn.success { background: var(--gradient-success); color: white; box-shadow: var(--shadow-md); }
+    .toolbar-btn.success:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+    .card {
+        background: var(--color-white);
+        border-radius: var(--radius-xl);
+        padding: 2rem;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+    }
+    .users-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .users-table thead {
+        background: linear-gradient(135deg, rgba(124,58,237,0.05) 0%, rgba(124,58,237,0.1) 100%);
+    }
+    .users-table th {
+        padding: 1rem; text-align: left; font-weight: 700;
+        color: var(--color-gray-900); font-size: 0.875rem;
+        text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .users-table td { padding: 1rem; border-bottom: 1px solid var(--color-gray-200); }
+    .users-table tr:hover { background: var(--color-gray-50); }
+    .role-badge {
+        padding: 0.25rem 0.75rem; border-radius: var(--radius-full);
+        font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    }
+    .role-badge.admin { background: linear-gradient(135deg, rgba(124,58,237,0.1) 0%, rgba(124,58,237,0.2) 100%); color: var(--color-primary); }
+    .role-badge.user { background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.2) 100%); color: var(--color-info); }
+    .status-badge {
+        padding: 0.25rem 0.75rem; border-radius: var(--radius-full);
+        font-size: 0.75rem; font-weight: 700;
+    }
+    .status-badge.active { background: linear-gradient(135deg, rgba(34,197,94,0.1) 0%, rgba(34,197,94,0.2) 100%); color: var(--color-success); }
+    .status-badge.inactive { background: linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(239,68,68,0.2) 100%); color: var(--color-error); }
+    .action-btns { display: flex; gap: 0.5rem; }
+    .table-btn {
+        padding: 0.5rem 0.75rem; border: none; border-radius: var(--radius-md);
+        font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all var(--transition-base);
+    }
+    .table-btn.edit { background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.15) 100%); color: var(--color-info); }
+    .table-btn.danger { background: linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(239,68,68,0.15) 100%); color: var(--color-error); }
+    .table-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
 
-        .navbar {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: var(--shadow-md);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+    .modal-overlay {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.5);
+        backdrop-filter: blur(4px);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 1000; animation: fade-in 0.2s ease-out;
+    }
+    @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+    .modal-content {
+        background: var(--color-white);
+        border-radius: var(--radius-2xl);
+        padding: 2.5rem;
+        max-width: 500px; width: 90%;
+        box-shadow: var(--shadow-2xl);
+        animation: slide-up 0.3s ease-out;
+    }
+    .modal-title { font-size: 1.875rem; font-weight: 800; color: var(--color-gray-900); margin-bottom: 2rem; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-label { display: block; font-weight: 600; color: var(--color-gray-700); margin-bottom: 0.5rem; font-size: 0.875rem; }
+    .form-input, .form-select {
+        width: 100%; padding: 0.875rem 1rem;
+        border: 2px solid var(--color-gray-200);
+        border-radius: var(--radius-lg);
+        font-family: var(--font-sans); font-size: 1rem;
+        transition: all var(--transition-base); box-sizing: border-box;
+    }
+    .form-input:focus, .form-select:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+    .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 2rem; }
+    .modal-btn {
+        padding: 0.875rem; border: none; border-radius: var(--radius-lg);
+        font-weight: 700; cursor: pointer; transition: all var(--transition-base);
+    }
+    .modal-btn.primary { background: var(--gradient-primary); color: white; box-shadow: var(--shadow-md); }
+    .modal-btn.primary:hover { box-shadow: var(--shadow-lg), var(--shadow-glow); transform: translateY(-2px); }
+    .modal-btn.secondary { background: var(--color-gray-200); color: var(--color-gray-700); }
+    .modal-btn.secondary:hover { background: var(--color-gray-300); }
+    .hidden { display: none !important; }
+    .audit-item { padding: 0.75rem; border-left: 3px solid var(--color-primary); margin-bottom: 0.5rem; background: var(--color-gray-50); border-radius: var(--radius-md); font-size: 0.9rem; }
+    .audit-item .time { font-size: 0.8rem; color: var(--color-gray-500); }
+</style>
+{% endblock %}
 
-        .navbar-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            height: 4rem;
-        }
-
-        .navbar-brand {
-            font-size: 1.25rem;
-            font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .navbar-user {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .user-name {
-            color: var(--color-gray-700);
-            font-weight: 600;
-        }
-
-        .logout-btn {
-            padding: 0.5rem 1.25rem;
-            background: var(--gradient-primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-lg);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--transition-base);
-        }
-
-        .logout-btn:hover {
-            box-shadow: var(--shadow-md), var(--shadow-glow);
-            transform: translateY(-2px);
-        }
-
-        .app-layout {
-            display: flex;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .sidebar {
-            width: 280px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            min-height: calc(100vh - 4rem);
-            padding: 2rem 0;
-            box-shadow: var(--shadow-md);
-        }
-
-        .sidebar-nav {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-            padding: 0 1rem;
-        }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem 1.25rem;
-            color: var(--color-gray-700);
-            text-decoration: none;
-            border-radius: var(--radius-lg);
-            transition: all var(--transition-base);
-            font-weight: 500;
-        }
-
-        .nav-link:hover {
-            background: var(--color-gray-100);
-            transform: translateX(4px);
-        }
-
-        .nav-link.active {
-            background: var(--gradient-primary);
-            color: white;
-            box-shadow: var(--shadow-md);
-        }
-
-        .nav-icon {
-            font-size: 1.5rem;
-        }
-
-        .main-content {
-            flex: 1;
-            padding: 2rem;
-        }
-
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-
-        .page-title {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: var(--color-gray-900);
-        }
-
-        .add-btn {
-            padding: 0.875rem 1.5rem;
-            background: var(--gradient-primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-lg);
-            font-weight: 700;
-            cursor: pointer;
-            transition: all var(--transition-base);
-            box-shadow: var(--shadow-md);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .add-btn:hover {
-            box-shadow: var(--shadow-lg), var(--shadow-glow);
-            transform: translateY(-2px);
-        }
-
-        .card {
-            background: white;
-            border-radius: var(--radius-xl);
-            padding: 2rem;
-            box-shadow: var(--shadow-md);
-        }
-
-        /* Table Styles */
-        .users-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .users-table thead {
-            background: linear-gradient(135deg, rgba(124, 58, 237, 0.05) 0%, rgba(124, 58, 237, 0.1) 100%);
-        }
-
-        .users-table th {
-            padding: 1rem;
-            text-align: left;
-            font-weight: 700;
-            color: var(--color-gray-900);
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .users-table td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--color-gray-200);
-        }
-
-        .users-table tr:hover {
-            background: var(--color-gray-50);
-        }
-
-        /* Role Badge */
-        .role-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--radius-full);
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-
-        .role-badge.admin {
-            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(124, 58, 237, 0.2) 100%);
-            color: var(--color-primary);
-        }
-
-        .role-badge.user {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.2) 100%);
-            color: var(--color-info);
-        }
-
-        /* Status Badge */
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: var(--radius-full);
-            font-size: 0.75rem;
-            font-weight: 700;
-        }
-
-        .status-badge.active {
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(34, 197, 94, 0.2) 100%);
-            color: var(--color-success);
-        }
-
-        .status-badge.inactive {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.2) 100%);
-            color: var(--color-error);
-        }
-
-        /* Action Buttons */
-        .action-btns {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .action-btn {
-            padding: 0.5rem 0.75rem;
-            border: none;
-            border-radius: var(--radius-md);
-            font-weight: 600;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all var(--transition-base);
-        }
-
-        .action-btn.edit {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.15) 100%);
-            color: var(--color-info);
-        }
-
-        .action-btn.delete {
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.15) 100%);
-            color: var(--color-error);
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-sm);
-        }
-
-        /* Modal */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            animation: fade-in 0.2s ease-out;
-        }
-
-        @keyframes fade-in {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: var(--radius-2xl);
-            padding: 2.5rem;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: var(--shadow-2xl);
-            animation: slide-up 0.3s ease-out;
-        }
-
-        .modal-title {
-            font-size: 1.875rem;
-            font-weight: 800;
-            color: var(--color-gray-900);
-            margin-bottom: 2rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 600;
-            color: var(--color-gray-700);
-            margin-bottom: 0.5rem;
-            font-size: 0.875rem;
-        }
-
-        .form-input,
-        .form-select {
-            width: 100%;
-            padding: 0.875rem 1rem;
-            border: 2px solid var(--color-gray-200);
-            border-radius: var(--radius-lg);
-            font-family: var(--font-sans);
-            font-size: 1rem;
-            transition: all var(--transition-base);
-        }
-
-        .form-input:focus,
-        .form-select:focus {
-            outline: none;
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
-        }
-
-        .modal-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .modal-btn {
-            padding: 0.875rem;
-            border: none;
-            border-radius: var(--radius-lg);
-            font-weight: 700;
-            cursor: pointer;
-            transition: all var(--transition-base);
-        }
-
-        .modal-btn.primary {
-            background: var(--gradient-primary);
-            color: white;
-            box-shadow: var(--shadow-md);
-        }
-
-        .modal-btn.primary:hover {
-            box-shadow: var(--shadow-lg), var(--shadow-glow);
-            transform: translateY(-2px);
-        }
-
-        .modal-btn.secondary {
-            background: var(--color-gray-200);
-            color: var(--color-gray-700);
-        }
-
-        .modal-btn.secondary:hover {
-            background: var(--color-gray-300);
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Toast */
-        .toast {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: white;
-            padding: 1rem 1.5rem;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-xl);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            animation: slide-up 0.3s ease-out;
-            z-index: 2000;
-        }
-
-        .toast.success {
-            border-left: 4px solid var(--color-success);
-        }
-
-        .toast.error {
-            border-left: 4px solid var(--color-error);
-        }
-    </style>
-</head>
-
-<body>
-    <nav class="navbar">
-        <div class="navbar-content">
-            <div class="navbar-brand"><span>🔐</span> Gestor de Contraseñas</div>
-            <div class="navbar-user">
-                <span class="user-name" id="userName"></span>
-                <button onclick="logout()" class="logout-btn">Cerrar Sesión</button>
-            </div>
-        </div>
-    </nav>
-
-    <div class="app-layout">
-        <aside class="sidebar">
-            <nav class="sidebar-nav">
-                <a href="/dashboard" class="nav-link"><span class="nav-icon">📊</span><span>Dashboard</span></a>
-                <a href="/passwords" class="nav-link"><span class="nav-icon">🔑</span><span>Contraseñas</span></a>
-                <a href="/ssh" class="nav-link"><span class="nav-icon">💻</span><span>Terminal SSH</span></a>
-                <a href="/admin" class="nav-link active"><span class="nav-icon">⚙️</span><span>Administración</span></a>
-            </nav>
-        </aside>
-
-        <main class="main-content">
-            <div class="flex justify-between items-center mb-8">
-                <h1 class="page-title mb-0">Administración de Usuarios</h1>
-                <div class="flex gap-4">
-                    <input type="file" id="importFile" accept=".xlsx" class="hidden" onchange="uploadCredentials(this)">
-                    <button onclick="triggerImport()"
-                        class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
-                        <span>📥</span> Importar Excel
-                    </button>
-                    <button onclick="exportCredentials()"
-                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
-                        <span>📊</span> Exportar a Excel
-                    </button>
-                    <button onclick="showCreateModal()"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition">
-                        <span>➕</span> Nuevo Usuario
-                    </button>
-                </div>
-            </div>
-
-            <div class="card">
-                <table class="users-table">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Email</th>
-                            <th>Rol</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersTableBody">
-                        <!-- Will be filled dynamically -->
-                    </tbody>
-                </table>
-            </div>
-        </main>
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title" data-i18n="admin.title">Administración de Usuarios</h1>
+    <div class="toolbar">
+        <input type="file" id="importFile" accept=".xlsx" class="hidden" onchange="uploadCredentials(this)">
+        <button onclick="document.getElementById('importFile').click()" class="toolbar-btn success" data-i18n="admin.import_excel">📥 Importar Excel</button>
+        <button onclick="exportCredentials()" class="toolbar-btn success" data-i18n="admin.export_excel">📊 Exportar Excel</button>
+        <button onclick="showCreateModal()" class="toolbar-btn primary" data-i18n="admin.new_user">➕ Nuevo Usuario</button>
     </div>
+</div>
 
-    <!-- Create User Modal -->
-    <div id="userModal" class="modal-overlay hidden" onclick="handleModalClick(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <h2 class="modal-title">Nuevo Usuario</h2>
-            <form id="userForm">
-                <div class="form-group">
-                    <label class="form-label">Nombre Completo</label>
-                    <input type="text" id="fullName" class="form-input" required>
-                </div>
+<div class="card">
+    <table class="users-table">
+        <thead>
+            <tr><th data-i18n="admin.name">Nombre</th><th data-i18n="admin.email">Email</th><th data-i18n="admin.role">Rol</th><th data-i18n="admin.status">Estado</th><th data-i18n="admin.actions">Acciones</th></tr>
+        </thead>
+        <tbody id="usersTableBody"></tbody>
+    </table>
+</div>
 
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <input type="email" id="email" class="form-input" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Contraseña</label>
-                    <input type="password" id="password" class="form-input" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">Rol</label>
-                    <select id="role" class="form-select">
-                        <option value="user">Usuario</option>
-                        <option value="admin">Administrador</option>
-                    </select>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="submit" class="modal-btn primary">Crear Usuario</button>
-                    <button type="button" onclick="hideModal()" class="modal-btn secondary">Cancelar</button>
-                </div>
-            </form>
-        </div>
+<div class="card" style="margin-top:1.5rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h2 style="font-size:1.5rem;font-weight:700" data-i18n="admin.audit">📜 Auditoría</h2>
     </div>
+    <div id="auditList" style="max-height:400px;overflow-y:auto"></div>
+</div>
 
-    <script>
-        const host = window.location.host;
-        const API_URL = `${window.location.protocol}//${host}/api`;
-        const user = {{ user | tojson }};
+<!-- Create User Modal -->
+<div id="userModal" class="modal-overlay hidden" onclick="if(event.target===this)hideModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h2 class="modal-title" data-i18n="admin.new_user_modal">Nuevo Usuario</h2>
+        <form id="userForm">
+            <div class="form-group">
+                <label class="form-label" data-i18n="auth.full_name">Nombre Completo</label>
+                <input type="text" id="fullName" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="admin.email">Email</label>
+                <input type="email" id="email" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="auth.password">Contraseña</label>
+                <input type="password" id="password" class="form-input" required minlength="8">
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="admin.role">Rol</label>
+                <select id="role" class="form-select">
+                    <option value="user" data-i18n="admin.role_user">Usuario</option>
+                    <option value="admin" data-i18n="admin.role_admin">Administrador</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="modal-btn primary" data-i18n="admin.create_user">Crear Usuario</button>
+                <button type="button" onclick="hideModal()" class="modal-btn secondary" data-i18n="common.cancel">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
 
-        if (user.role !== 'admin') {
-            window.location.href = '/dashboard';
-        }
+{% block extra_scripts %}
+<script>
+    const user = {{ user | tojson }};
+    if (user.role !== 'admin') window.location.href = '/dashboard';
 
-        document.getElementById('userName').textContent = user.full_name || user.email;
-
-        async function exportCredentials() {
-            try {
-                const response = await fetch(`${API_URL}/admin/export`, {
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'credenciales_export.xlsx';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    a.remove();
-                } else {
-                    const error = await response.json();
-                    alert('Error al exportar: ' + (error.detail || 'Error desconocido'));
-                }
-
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error de conexión al exportar');
+    async function exportCredentials() {
+        try {
+            const response = await fetch(`${API_URL}/admin/export`, { credentials: 'include' });
+            if (response.ok) {
+                const blob = await response.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'credenciales_export.xlsx';
+                a.click();
+                URL.revokeObjectURL(a.href);
+            } else {
+                const err = await response.json();
+                showToast(err.detail || t('admin.export_error'), 'error');
             }
+        } catch (error) {
+            showToast(t('admin.export_connection_error'), 'error');
         }
+    }
 
-        function triggerImport() {
-            document.getElementById('importFile').click();
-        }
-
-        async function uploadCredentials(input) {
-            if (!input.files || input.files.length === 0) return;
-
-            const file = input.files[0];
-            const formData = new FormData();
-            formData.append('file', file);
-
-            // Reset input to allow selecting the same file again
-            const originalValue = input.value;
-            input.value = '';
-
-            try {
-                const response = await fetch(`${API_URL}/admin/import`, {
-                    method: 'POST',
-                    body: formData,
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    showToast(result.message, 'success');
-                } else {
-                    const error = await response.json();
-                    showToast(error.detail || 'Error al importar', 'error');
-                }
-            } catch (error) {
-                console.error(error);
-                showToast('Error de conexión al importar', 'error');
-            }
-        }
-
-        async function loadUsers() {
-            try {
-                const response = await fetch(`${API_URL}/admin/users`, {
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    const users = await response.json();
-                    displayUsers(users);
-                } else if (response.status === 401) {
-                    logout();
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showToast('Error al cargar usuarios', 'error');
-            }
-        }
-
-        function displayUsers(users) {
-            const tbody = document.getElementById('usersTableBody');
-
-            tbody.innerHTML = users.map(u => `
-                <tr>
-                    <td style="font-weight: 600;">${u.full_name || 'Sin nombre'}</td>
-                    <td style="font-family: var(--font-mono); font-size: 0.875rem;">${u.email}</td>
-                    <td><span class="role-badge ${u.role}">${u.role === 'admin' ? 'Admin' : 'Usuario'}</span></td>
-                    <td><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Activo' : 'Inactivo'}</span></td>
-                    <td>
-                        <div class="action-btns">
-                            ${u.id !== user.id ? `
-                                <button onclick="toggleUserStatus('${u.id}', ${!u.is_active})" class="action-btn edit">
-                                    ${u.is_active ? 'Desactivar' : 'Activar'}
-                                </button>
-                            ` : '<span style="color: var(--color-gray-500); font-size: 0.875rem;">Tú</span>'}
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function showCreateModal() {
-            document.getElementById('userModal').classList.remove('hidden');
-            document.getElementById('userForm').reset();
-        }
-
-        function hideModal() {
-            document.getElementById('userModal').classList.add('hidden');
-        }
-
-        function handleModalClick(event) {
-            if (event.target.id === 'userModal') {
-                hideModal();
-            }
-        }
-
-        document.getElementById('userForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const data = {
-                full_name: document.getElementById('fullName').value,
-                email: document.getElementById('email').value,
-                password: document.getElementById('password').value,
-                role: document.getElementById('role').value
-            };
-
-            try {
-                const response = await fetch(`${API_URL}/admin/users`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(data)
-                });
-
-                if (response.ok) {
-                    hideModal();
-                    showToast('Usuario creado exitosamente', 'success');
-                    loadUsers();
-                } else {
-                    const error = await response.json();
-                    showToast(error.detail || 'Error al crear usuario', 'error');
-                }
-            } catch (error) {
-                showToast('Error de conexión', 'error');
-            }
-        });
-
-        async function toggleUserStatus(userId, newStatus) {
-            const action = newStatus ? 'activar' : 'desactivar';
-            if (!confirm(`¿Estás seguro de ${action} este usuario?`)) return;
-
-            try {
-                const response = await fetch(`${API_URL}/admin/users/${userId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ is_active: newStatus })
-                });
-
-                if (response.ok) {
-                    showToast(`Usuario ${action}do exitosamente`, 'success');
-                    loadUsers();
-                } else {
-                    showToast(`Error al ${action} usuario`, 'error');
-                }
-            } catch (error) {
-                showToast('Error de conexión', 'error');
-            }
-        }
-
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.animation = 'fade-out 0.3s ease-out';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        async function logout() {
-            await fetch(`${API_URL}/auth/logout`, {
-                method: 'POST',
-                credentials: 'include'
+    async function uploadCredentials(input) {
+        if (!input.files?.length) return;
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        input.value = '';
+        try {
+            const response = await fetch(`${API_URL}/admin/import`, {
+                method: 'POST', body: formData, credentials: 'include',
+                headers: {'X-CSRF-Token': getCSRFToken()}
             });
-            window.location.href = '/';
+            const result = await response.json();
+            if (response.ok) {
+                showToast(result.message, 'success');
+            } else {
+                showToast(result.detail || t('admin.import_error'), 'error');
+            }
+        } catch (error) {
+            showToast(t('admin.import_connection_error'), 'error');
         }
+    }
 
-        loadUsers();
-    </script>
-</body>
+    async function loadUsers() {
+        try {
+            const response = await fetch(`${API_URL}/admin/users`, { credentials: 'include' });
+            if (response.ok) {
+                displayUsers(await response.json());
+            } else if (response.status === 401) logout();
+        } catch (error) {
+            showToast(t('admin.load_error'), 'error');
+        }
+    }
 
-</html>
+    function displayUsers(users) {
+        document.getElementById('usersTableBody').innerHTML = users.map(u =>
+            `<tr>
+                <td style="font-weight:600;">${u.full_name || t('admin.no_name')}</td>
+                <td style="font-family:var(--font-mono);font-size:0.875rem;">${u.email}</td>
+                <td><span class="role-badge ${u.role}">${t(u.role === 'admin' ? 'admin.role_admin' : 'admin.role_user')}</span></td>
+                <td><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${t(u.is_active ? 'admin.status_active' : 'admin.status_inactive')}</span></td>
+                <td>
+                    <div class="action-btns">
+                        ${u.id !== user.id ? `
+                            <button onclick="toggleUserStatus('${u.id}', ${!u.is_active})" class="table-btn edit">
+                                ${t(u.is_active ? 'admin.deactivate_btn' : 'admin.activate_btn')}
+                            </button>
+                        ` : '<span style="color:var(--color-gray-500);font-size:0.875rem;">' + t('admin.you') + '</span>'}
+                    </div>
+                </td>
+            </tr>`
+        ).join('');
+    }
+
+    function showCreateModal() {
+        document.getElementById('userModal').classList.remove('hidden');
+        document.getElementById('userForm').reset();
+    }
+
+    function hideModal() {
+        document.getElementById('userModal').classList.add('hidden');
+    }
+
+    document.getElementById('userForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            full_name: document.getElementById('fullName').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+            role: document.getElementById('role').value
+        };
+        try {
+            const response = await fetch(`${API_URL}/admin/users`, {
+                method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken()},
+                credentials: 'include', body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                hideModal();
+                showToast(t('admin.create_success'), 'success');
+                loadUsers();
+            } else {
+                const err = await response.json();
+                showToast(err.detail || t('admin.create_error'), 'error');
+            }
+        } catch (error) {
+            showToast(t('common.connection_error'), 'error');
+        }
+    });
+
+    async function toggleUserStatus(userId, newStatus) {
+        const action = newStatus ? t('admin.action_activate') : t('admin.action_deactivate');
+        if (!confirm(t('admin.toggle_confirm', {action}))) return;
+        try {
+            const response = await fetch(`${API_URL}/admin/users/${userId}`, {
+                method: 'PUT', headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken()},
+                credentials: 'include', body: JSON.stringify({ is_active: newStatus })
+            });
+            if (response.ok) {
+                showToast(t('admin.toggle_success', {action}), 'success');
+                loadUsers();
+            } else {
+                showToast(t('admin.toggle_error', {action}), 'error');
+            }
+        } catch (error) {
+            showToast(t('common.connection_error'), 'error');
+        }
+    }
+
+    async function loadAudit() {
+        try {
+            const r = await fetch(`${API_URL}/credentials/audit`, { credentials: 'include' });
+            if (!r.ok) return;
+            const logs = await r.json();
+            const container = document.getElementById('auditList');
+            const icons = {created:'✅', updated:'✏️', deleted:'🗑️', restored:'♻️'};
+            const actionNames = {created: t('admin.audit_created'), updated: t('admin.audit_updated'), deleted: t('admin.audit_deleted'), restored: t('admin.audit_restored')};
+            container.innerHTML = logs.map(log =>
+                `<div class="audit-item">
+                    <div>${icons[log.action] || '📋'} <strong>${actionNames[log.action] || log.action}</strong> — ${log.resource_type} ${log.resource_id ? log.resource_id.slice(0,8)+'...' : ''}</div>
+                    <div class="time">${new Date(log.timestamp).toLocaleString()} ${log.ip_address ? '· '+log.ip_address : ''}</div>
+                </div>`
+            ).join('');
+        } catch (_) {}
+    }
+
+    loadUsers();
+    loadAudit();
+</script>
+{% endblock %}

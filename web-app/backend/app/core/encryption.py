@@ -1,20 +1,24 @@
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from config import get_settings
 import base64
+import hashlib
 
 settings = get_settings()
 
-def get_cipher():
-    """Obtener cipher para encriptación"""
-    # Asegurar que la key tenga el formato correcto
+def _derive_fernet_key(raw_key: str) -> bytes:
+    """Derivar una clave Fernet válida (32 bytes URL-safe base64) usando SHA-256."""
+    digest = hashlib.sha256(raw_key.encode()).digest()
+    return base64.urlsafe_b64encode(digest)
+
+def get_cipher() -> Fernet:
     key = settings.encryption_key.encode()
-    # Si no es una key válida de Fernet, generarla
+    if not settings.encryption_key or settings.encryption_key == "setup_mode_key":
+        raise RuntimeError("ENCRYPTION_KEY no configurada")
     try:
         return Fernet(key)
-    except:
-        # Generar key desde la configuración
-        key = base64.urlsafe_b64encode(key.ljust(32)[:32])
-        return Fernet(key)
+    except (ValueError, InvalidToken):
+        derived = _derive_fernet_key(settings.encryption_key)
+        return Fernet(derived)
 
 def encrypt_password(password: str) -> str:
     """Encriptar contraseña"""

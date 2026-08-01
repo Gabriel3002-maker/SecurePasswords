@@ -1,209 +1,139 @@
-<!DOCTYPE html>
-<html lang="es">
+{% extends "layout.html" %}
+{% block title %}{{ t('setup.title') }}{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configuración Inicial - Gestor de Contraseñas</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
-    <style>
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: var(--font-sans);
-        }
+{% block full_content %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh; display: flex; align-items: center; justify-content: center;
+        font-family: var(--font-sans);
+    }
+    .setup-card {
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        padding: 2.5rem; border-radius: 1.5rem;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+        width: 100%; max-width: 500px;
+        animation: slide-up 0.5s ease-out;
+    }
+    [data-theme="dark"] .setup-card {
+        background: rgba(30,30,46,0.95);
+        border: 1px solid rgba(69,71,90,0.5);
+    }
+    .setup-header { text-align: center; margin-bottom: 2rem; }
+    .setup-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+    .setup-title { font-size: 1.875rem; font-weight: 800; color: var(--color-gray-900); margin: 0; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .setup-subtitle { color: var(--color-gray-600); margin-top: 0.5rem; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-label { display: block; font-weight: 600; color: var(--color-gray-700); margin-bottom: 0.5rem; }
+    .form-input { width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--color-gray-200); border-radius: var(--radius-lg); font-size: 1rem; transition: all 0.2s; box-sizing: border-box; background: var(--color-white); }
+    .form-input:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    .btn-primary { width: 100%; padding: 1rem; background: var(--gradient-primary); color: white; border: none; border-radius: var(--radius-lg); font-weight: 700; font-size: 1.125rem; cursor: pointer; transition: all 0.2s; margin-top: 1rem; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .section-title { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-gray-500); font-weight: 700; margin: 1.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--color-gray-200); }
+    .hint { display: block; margin-top: 0.5rem; color: var(--color-gray-500); font-size: 0.8rem; }
+    .password-strength { margin-top: 0.5rem; height: 4px; border-radius: 2px; background: var(--color-gray-200); overflow: hidden; }
+    .password-strength-bar { height: 100%; width: 0%; border-radius: 2px; transition: all var(--transition-base); }
+    .password-strength-text { font-size: 0.75rem; margin-top: 0.25rem; font-weight: 600; }
+</style>
 
-        .setup-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 2.5rem;
-            border-radius: 1.5rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            width: 100%;
-            max-width: 500px;
-            animation: slide-up 0.5s ease-out;
-        }
-
-        @keyframes slide-up {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .setup-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .setup-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            display: block;
-        }
-
-        .setup-title {
-            font-size: 1.875rem;
-            font-weight: 800;
-            color: var(--color-gray-900);
-            margin: 0;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .setup-subtitle {
-            color: var(--color-gray-600);
-            margin-top: 0.5rem;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 600;
-            color: var(--color-gray-700);
-            margin-bottom: 0.5rem;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--color-gray-200);
-            border-radius: var(--radius-lg);
-            font-size: 1rem;
-            transition: all 0.2s;
-            box-sizing: border-box;
-        }
-
-        .form-input:focus {
-            border-color: var(--color-primary);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-
-        .btn-primary {
-            width: 100%;
-            padding: 1rem;
-            background: var(--gradient-primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-lg);
-            font-weight: 700;
-            font-size: 1.125rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-top: 1rem;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-
-        .section-title {
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--color-gray-500);
-            font-weight: 700;
-            margin: 1.5rem 0 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--color-gray-200);
-        }
-    </style>
-</head>
-
-<body>
-    <div class="setup-card">
-        <div class="setup-header">
-            <span class="setup-icon">🧙‍♂️</span>
-            <h1 class="setup-title">Configuración Inicial</h1>
-            <p class="setup-subtitle">Bienvenido al Gestor de Contraseñas</p>
-        </div>
-
-        <form id="setupForm" onsubmit="handleSetup(event)">
-            <div class="section-title">Base de Datos</div>
-            <div class="form-group">
-                <label class="form-label">Nombre de la Base de Datos</label>
-                <input type="text" name="db_name" class="form-input" placeholder="ej: passwords.db" value="passwords.db"
-                    required>
-            </div>
-
-            <div class="section-title">Administrador</div>
-            <div class="form-group">
-                <label class="form-label">Nombre Completo</label>
-                <input type="text" name="admin_name" class="form-input" placeholder="Tu nombre" required>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Correo Electrónico</label>
-                <input type="email" name="admin_email" class="form-input" placeholder="admin@ejemplo.com" required>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Contraseña</label>
-                <input type="password" name="admin_password" class="form-input" placeholder="••••••••" required
-                    minlength="4">
-            </div>
-
-            <button type="submit" class="btn-primary">
-                Guardar y Continuar
-            </button>
-        </form>
+<div class="setup-card">
+    <div class="setup-header">
+        <span class="setup-icon">🧙‍♂️</span>
+        <h1 class="setup-title" data-i18n="setup.title">Configuración Inicial</h1>
+        <p class="setup-subtitle" data-i18n="setup.subtitle">Bienvenido al Gestor de Contraseñas</p>
     </div>
 
-    <script>
-        async function handleSetup(event) {
-            event.preventDefault();
-            const form = event.target;
-            const btn = form.querySelector('button');
-            const originalText = btn.textContent;
+    <form id="setupForm" onsubmit="handleSetup(event)">
+        <div class="section-title" data-i18n="setup.database_section">Base de Datos</div>
+        <div class="form-group">
+            <label class="form-label" data-i18n="setup.db_name_label">Nombre de la Base de Datos</label>
+            <input type="text" name="db_name" class="form-input" data-i18n-placeholder="setup.db_name_placeholder" placeholder="ej: passwords.db" value="passwords.db" required>
+        </div>
 
-            btn.disabled = true;
-            btn.textContent = 'Configurando...';
+        <div class="section-title" data-i18n="setup.language_section">Idioma</div>
+        <div class="form-group">
+            <label class="form-label" data-i18n="setup.language_label">Selecciona tu idioma</label>
+            <select name="language" class="form-input" onchange="changeLanguage(this.value)">
+                <option value="es">Español</option>
+                <option value="en">English</option>
+                <option value="pt">Português</option>
+            </select>
+        </div>
 
-            const formData = new FormData(form);
-            const data = Object.fromEntries(formData.entries());
+        <div class="section-title" data-i18n="setup.admin_section">Administrador</div>
+        <div class="form-group">
+            <label class="form-label" data-i18n="setup.full_name_label">Nombre Completo</label>
+            <input type="text" name="admin_name" class="form-input" data-i18n-placeholder="setup.full_name_placeholder" placeholder="Tu nombre" required>
+        </div>
+        <div class="form-group">
+            <label class="form-label" data-i18n="setup.email_label">Correo Electrónico</label>
+            <input type="email" name="admin_email" class="form-input" data-i18n-placeholder="setup.email_placeholder" placeholder="admin@ejemplo.com" required>
+        </div>
+        <div class="form-group">
+            <label class="form-label" data-i18n="setup.password_label">Contraseña</label>
+            <input type="password" name="admin_password" class="form-input" data-i18n-placeholder="setup.password_placeholder" placeholder="••••••••" required minlength="8" oninput="updateStrength(this)">
+            <div class="password-strength"><div id="strengthBar" class="password-strength-bar"></div></div>
+            <span id="strengthText" class="password-strength-text"></span>
+            <span class="hint" data-i18n="setup.password_hint">Usa al menos 8 caracteres, mayúsculas, minúsculas, números y un símbolo.</span>
+        </div>
 
-            try {
-                const response = await fetch('/api/setup', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
+        <button type="submit" class="btn-primary" data-i18n="setup.submit">Guardar y Continuar</button>
+    </form>
+</div>
 
-                if (response.ok) {
-                    btn.textContent = '¡Listo! Redirigiendo...';
-                    setTimeout(() => {
-                        window.location.href = '/';
-                    }, 1500);
-                } else {
-                    const error = await response.json();
-                    alert('Error: ' + (error.detail || 'Error en la configuración'));
-                    btn.disabled = false;
-                    btn.textContent = originalText;
-                }
-            } catch (error) {
-                console.error(error);
-                alert('Error de conexión');
+<script>
+    function updateStrength(input) {
+        const pwd = input.value;
+        const bar = document.getElementById('strengthBar');
+        const text = document.getElementById('strengthText');
+        let score = 0;
+        if (pwd.length >= 8) score++;
+        if (pwd.length >= 12) score++;
+        if (/[A-Z]/.test(pwd)) score++;
+        if (/[a-z]/.test(pwd)) score++;
+        if (/\d/.test(pwd)) score++;
+        if (/[^A-Za-z0-9]/.test(pwd)) score++;
+        const colors = ['#ef4444','#ef4444','#f59e0b','#f59e0b','#22c55e','#22c55e'];
+        const labels = ['', t('strength.very_weak'), t('strength.weak'), t('strength.regular'), t('strength.strong'), t('strength.very_strong')];
+        bar.style.width = (score / 6 * 100) + '%';
+        bar.style.background = colors[score] || '#22c55e';
+        text.textContent = labels[score] || '';
+        text.style.color = colors[score] || '#22c55e';
+    }
+
+    async function handleSetup(event) {
+        event.preventDefault();
+        const form = event.target;
+        const btn = form.querySelector('button');
+        const originalText = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = t('setup.configuring');
+
+        const data = Object.fromEntries(new FormData(form).entries());
+        const lang = data.language || 'es';
+        localStorage.setItem('app-lang', lang);
+        document.documentElement.setAttribute('data-lang', lang);
+        try {
+            const response = await fetch('/api/setup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                btn.textContent = t('setup.done');
+                setTimeout(() => window.location.href = '/', 1500);
+            } else {
+                const error = await response.json();
+                alert(t('setup.error') + (error.detail || t('setup.connection_error')));
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
+        } catch (error) {
+            alert(t('setup.connection_error'));
+            btn.disabled = false;
+            btn.textContent = originalText;
         }
-    </script>
-</body>
-
-</html>
+    }
+</script>
+{% endblock %}

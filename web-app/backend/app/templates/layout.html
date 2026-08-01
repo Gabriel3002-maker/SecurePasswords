@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="{{ locale }}" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token or '' }}">
+    <title>{% block title %}🔐 {{ t('auth.page_title') }}{% endblock %}</title>
+    <script>
+        (function() {
+            const saved = localStorage.getItem('app-lang') || '{{ locale }}';
+            document.documentElement.setAttribute('data-lang', saved);
+        })();
+    </script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% if user %}
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-brand">
+                <span>🔐</span>
+                <span data-i18n="auth.page_title">Gestor de Contraseñas</span>
+            </div>
+            <div class="navbar-user">
+                <select id="langSelect" class="lang-select" onchange="changeLanguage(this.value)">
+                    <option value="es">ES</option>
+                    <option value="en">EN</option>
+                    <option value="pt">PT</option>
+                </select>
+                <button id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+                <span class="user-name" id="userName">{{ user.full_name or user.email }}</span>
+                <button onclick="logout()" class="logout-btn" data-i18n="nav.logout">Cerrar Sesión</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="app-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="/dashboard" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+                    <span class="nav-icon">📊</span>
+                    <span data-i18n="nav.dashboard">Dashboard</span>
+                </a>
+                <a href="/passwords" class="nav-link {% if active_page == 'passwords' %}active{% endif %}">
+                    <span class="nav-icon">🔑</span>
+                    <span data-i18n="nav.passwords">Contraseñas</span>
+                </a>
+                <a href="/ssh" class="nav-link {% if active_page == 'ssh' %}active{% endif %}">
+                    <span class="nav-icon">💻</span>
+                    <span data-i18n="nav.ssh">Terminal SSH</span>
+                </a>
+                {% if user.role == 'admin' %}
+                <a href="/admin" class="nav-link {% if active_page == 'admin' %}active{% endif %}">
+                    <span class="nav-icon">⚙️</span>
+                    <span data-i18n="nav.admin">Administración</span>
+                </a>
+                {% endif %}
+            </nav>
+        </aside>
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% else %}
+    {% block full_content %}{% endblock %}
+    {% endif %}
+
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script>
+        const API_URL = `${window.location.protocol}//${window.location.host}/api`;
+
+        const I18N_CURRENT_LANG = '{{ locale }}';
+        const I18N_TRANSLATIONS = {{ translations | tojson }};
+
+        function getAppLanguage() {
+            return localStorage.getItem('app-lang') || document.documentElement.getAttribute('data-lang') || '{{ locale }}';
+        }
+        window.getAppLanguage = getAppLanguage;
+
+        function getCSRFToken() {
+            return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span class="toast-icon">${type === 'success' ? '✅' : '❌'}</span>
+                <span class="toast-message">${message}</span>
+            `;
+            container.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        async function logout() {
+            await fetch(`${API_URL}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {'X-CSRF-Token': getCSRFToken()}
+            });
+            window.location.href = '/';
+        }
+
+        function t(key, vars) {
+            let s = (window.I18N_TRANSLATIONS && window.I18N_TRANSLATIONS[key]) || key;
+            if (vars) {
+                for (const k in vars) {
+                    s = s.split('{' + k + '}').join(vars[k]);
+                }
+            }
+            return s;
+        }
+        window.t = t;
+
+        function applyTranslations() {
+            document.querySelectorAll('[data-i18n]').forEach((el) => {
+                const key = el.getAttribute('data-i18n');
+                const vars = {};
+                for (const attr of el.attributes) {
+                    if (attr.name.startsWith('data-i18n-var-')) vars[attr.name.slice(14)] = attr.value;
+                }
+                const val = t(key, Object.keys(vars).length ? vars : undefined);
+                if (val !== key) el.textContent = val;
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                const val = t(key);
+                if (val !== key) el.setAttribute('placeholder', val);
+            });
+            const themeBtn = document.getElementById('themeToggle') || document.getElementById('loginThemeToggle');
+            if (themeBtn) themeBtn.title = t('nav.change_theme');
+        }
+
+        function changeLanguage(lang) {
+            lang = lang || '{{ locale }}';
+            document.documentElement.setAttribute('data-lang', lang);
+            localStorage.setItem('app-lang', lang);
+            document.cookie = `app_lang=${lang}; path=/; max-age=31536000`;
+            document.documentElement.lang = lang;
+            const apply = () => {
+                applyTranslations();
+                const selects = document.querySelectorAll('.lang-select, #langSelectTop, select[name="language"]');
+                selects.forEach((s) => { s.value = lang; });
+                window.dispatchEvent(new Event('app-language-changed'));
+            };
+            if (window.I18N_CURRENT_LANG === lang) { apply(); return; }
+            fetch(`/api/i18n/translations?lang=${lang}`)
+                .then((r) => r.json())
+                .then((data) => {
+                    window.I18N_TRANSLATIONS = data.translations;
+                    window.I18N_CURRENT_LANG = data.locale;
+                    apply();
+                })
+                .catch(() => apply());
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+            const btns = [document.getElementById('themeToggle'), document.getElementById('loginThemeToggle')];
+            btns.forEach((b) => { if (b) b.textContent = next === 'dark' ? '☀️' : '🌙'; });
+        }
+
+        (function initTheme() {
+            const saved = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+            const btns = [document.getElementById('themeToggle'), document.getElementById('loginThemeToggle')];
+            btns.forEach((b) => { if (b) b.textContent = saved === 'dark' ? '☀️' : '🌙'; });
+        })();
+
+        (function initLanguage() {
+            const saved = localStorage.getItem('app-lang') || '{{ locale }}';
+            const langSelect = document.getElementById('langSelect');
+            if (langSelect) langSelect.value = saved;
+            changeLanguage(saved);
+        })();
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

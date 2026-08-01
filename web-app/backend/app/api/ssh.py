@@ -121,7 +121,7 @@ async def ssh_terminal(websocket: WebSocket, session_id: str):
         try:
             await websocket.send_text(f"\r\n{error_msg}\r\n")
             await websocket.close(code=1011, reason=str(e))
-        except:
+        except Exception:
             pass
     finally:
         # Marcar sesión como terminada
