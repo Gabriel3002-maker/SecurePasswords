@@ -133,4 +133,4 @@ SecurePasswords/
 
 ## Licencia
 
-MIT
+[MIT License](LICENSE) — Libre para usar, modificar y distribuir.

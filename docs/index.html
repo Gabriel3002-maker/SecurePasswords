@@ -45,7 +45,7 @@
     a { color: #93c5fd; }
     .badges { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: 1rem; }
     .badge { background: rgba(56,189,248,.12); border: 1px solid rgba(56,189,248,.3); color: #bae6fd; border-radius: 999px; padding: .35rem .7rem; font-size: .85rem; }
-    [data-lang="en"] { display: none; }
+    :not(body)[data-lang="en"] { display: none; }
     body[data-lang="en"] [data-lang="es"] { display: none; }
     body[data-lang="en"] [data-lang="en"] { display: block; }
   </style>
@@ -133,8 +133,16 @@
     function setLang(lang) {
       document.body.setAttribute('data-lang', lang);
       document.querySelectorAll('.lang-switch button').forEach(btn => btn.classList.toggle('active', btn.textContent.toLowerCase().includes(lang === 'es' ? 'español' : 'english')));
+      try { history.replaceState(null, '', '#' + lang); } catch (e) {}
     }
-    setLang('es');
+    (function initLang() {
+      var h = (location.hash || '').replace('#', '').toLowerCase();
+      setLang(h === 'en' || h === 'pt' ? h : 'es');
+    })();
+    window.addEventListener('hashchange', function () {
+      var h = (location.hash || '').replace('#', '').toLowerCase();
+      if (h === 'en' || h === 'pt' || h === 'es') setLang(h);
+    });
   </script>
 </body>
 </html>

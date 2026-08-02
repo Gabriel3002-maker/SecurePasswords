@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import secrets
+import time
 
 from database import SessionLocal
 from models.models import RecoveryCode, SystemSetting
@@ -13,6 +14,11 @@ router = APIRouter(prefix="/recovery", tags=["Recovery"])
 
 CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 CODE_TTL_MINUTES = 10
+MAX_RECOVERY_ATTEMPTS = 5
+RECOVERY_LOCKOUT_MINUTES = 15
+
+# Rate limiting: {ip_address: {"attempts": int, "last_attempt": timestamp}}
+_RECOVERY_ATTEMPTS: dict[str, dict] = {}
 
 
 class RecoveryRequest(BaseModel):
@@ -25,7 +31,39 @@ class RecoveryConfirm(BaseModel):
 
 
 def _generate_code() -> str:
-    return "".join(secrets.choice(CODE_ALPHABET) for _ in range(6))
+    return "".join(secrets.choice(CODE_ALPHABET) for _ in range(8))
+
+
+def _check_recovery_rate_limit(ip: str) -> None:
+    """Verificar si el IP excedió intentos de recuperación."""
+    now = time.time()
+    attempt_data = _RECOVERY_ATTEMPTS.get(ip, {})
+
+    # Si el último intento fue hace más de RECOVERY_LOCKOUT_MINUTES, resetear
+    if attempt_data.get("last_attempt", 0) + (RECOVERY_LOCKOUT_MINUTES * 60) < now:
+        _RECOVERY_ATTEMPTS.pop(ip, None)
+        return
+
+    if attempt_data.get("attempts", 0) >= MAX_RECOVERY_ATTEMPTS:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Demasiados intentos. Intenta de nuevo en {RECOVERY_LOCKOUT_MINUTES} minutos."
+        )
+
+
+def _record_recovery_attempt(ip: str, success: bool) -> None:
+    """Registrar intento de recuperación."""
+    now = time.time()
+    if ip not in _RECOVERY_ATTEMPTS:
+        _RECOVERY_ATTEMPTS[ip] = {"attempts": 0, "last_attempt": now}
+
+    _RECOVERY_ATTEMPTS[ip]["last_attempt"] = now
+
+    if not success:
+        _RECOVERY_ATTEMPTS[ip]["attempts"] = _RECOVERY_ATTEMPTS[ip].get("attempts", 0) + 1
+    else:
+        # Limpiar intentos fallidos después de éxito
+        _RECOVERY_ATTEMPTS.pop(ip, None)
 
 
 @router.post("/request")
@@ -67,13 +105,19 @@ def request_recovery(request: Request):
 
 
 @router.post("/confirm")
-def confirm_recovery(data: RecoveryConfirm):
+def confirm_recovery(request: Request, data: RecoveryConfirm):
     """Confirmar código y restablecer la contraseña maestra."""
+    ip = request.client.host if request.client else "unknown"
+
+    # Verificar rate limiting
+    _check_recovery_rate_limit(ip)
+
     code = data.code.strip().upper()
     new_password = data.new_master_password
 
     valid, msg = validate_password_requirements(new_password)
     if not valid:
+        _record_recovery_attempt(ip, False)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=msg)
 
     now = datetime.utcnow()
@@ -91,6 +135,7 @@ def confirm_recovery(data: RecoveryConfirm):
         )
         match = next((c for c in codes if verify_password(code, c.code_hash)), None)
         if not match:
+            _record_recovery_attempt(ip, False)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Código inválido o expirado.",
@@ -103,6 +148,8 @@ def confirm_recovery(data: RecoveryConfirm):
         else:
             db.add(SystemSetting(key="master_password_hash", value=get_password_hash(new_password)))
         db.commit()
+
+        _record_recovery_attempt(ip, True)
     finally:
         db.close()
 
