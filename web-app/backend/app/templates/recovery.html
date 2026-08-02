@@ -55,7 +55,7 @@
     <form id="confirmForm" onsubmit="confirmCode(event)">
         <div class="form-group">
             <label class="form-label" data-i18n="recovery.code_label" for="codeInput">Código de recuperación</label>
-            <input type="text" id="codeInput" class="form-input code-input" data-i18n-placeholder="recovery.code_placeholder" placeholder="XXXXXX" maxlength="6" required>
+            <input type="text" id="codeInput" class="form-input code-input" data-i18n-placeholder="recovery.code_placeholder" placeholder="XXXXXXXX" maxlength="8" autocomplete="off" required>
         </div>
         <div class="form-group">
             <label class="form-label" data-i18n="recovery.new_master_label" for="newMasterInput">Nueva contraseña maestra</label>
@@ -101,16 +101,20 @@
 
     async function confirmCode(event) {
         event.preventDefault();
+        const codeInput = document.getElementById('codeInput');
         const btn = event.target.querySelector('button[type="submit"]');
         btn.disabled = true;
         setStatus('confirmStatus', '', '');
         try {
+            // Limpiar código: remover espacios y caracteres no válidos
+            let code = codeInput.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+
             const response = await fetch('/api/recovery/confirm', {
                 method: 'POST',
                 credentials: 'include',
                 headers: {'Content-Type': 'application/json', 'X-CSRF-Token': getCSRFToken()},
                 body: JSON.stringify({
-                    code: document.getElementById('codeInput').value,
+                    code: code,
                     new_master_password: document.getElementById('newMasterInput').value
                 })
             });
@@ -126,5 +130,18 @@
             btn.disabled = false;
         }
     }
+
+    // Permitir copiar/pegar sin restricciones
+    document.addEventListener('DOMContentLoaded', function() {
+        const codeInput = document.getElementById('codeInput');
+        if (codeInput) {
+            codeInput.addEventListener('paste', function(e) {
+                setTimeout(() => {
+                    // Auto-limpiar al pegar: mayúsculas, sin espacios
+                    codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+                }, 10);
+            });
+        }
+    });
 </script>
 {% endblock %}
