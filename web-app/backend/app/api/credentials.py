@@ -96,11 +96,20 @@ def list_credentials(
             q = q.filter(Credential.is_favorite == True)
         results = q.order_by(Credential.updated_at.desc()).all()
     else:
-        # Usuarios normales: solo sus propias credenciales
-        q = db.query(Credential).filter(
+        # Usuarios normales: sus propias credenciales + las compartidas con ellos
+        owned = db.query(Credential.id).filter(
             Credential.created_by == current_user.id,
             Credential.is_deleted == False
         )
+        shared = db.query(Credential.id).join(
+            CredentialPermission,
+            CredentialPermission.credential_id == Credential.id
+        ).filter(
+            CredentialPermission.user_id == current_user.id,
+            CredentialPermission.can_view == True,
+            Credential.is_deleted == False
+        )
+        q = db.query(Credential).filter(Credential.id.in_(owned.union(shared)))
         if folder is not None and folder != "Favoritos":
             q = q.filter(Credential.folder == folder)
         if search:
