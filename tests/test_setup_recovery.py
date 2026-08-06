@@ -102,7 +102,7 @@ class TestSetupRecovery(unittest.TestCase):
         self.assertEqual(result["message"], "Código enviado a tu chat de Telegram.")
         self.assertTrue(any("ABC123" in text for text, _ in sent))
 
-        result2 = rec.confirm_recovery(RecoveryConfirm(code="ABC123", new_master_password="NewMaster1!"))
+        result2 = rec.confirm_recovery(SimpleNamespace(client=None), RecoveryConfirm(code="ABC123", new_master_password="NewMaster1!"))
         self.assertEqual(result2["message"], "Contraseña maestra restablecida correctamente.")
         self.assertEqual(self._get_setting("master_password_hash"), "H:NewMaster1!")
 
@@ -123,7 +123,7 @@ class TestSetupRecovery(unittest.TestCase):
 
         tg.send_message = lambda *a, **k: True
         with self.assertRaises(HTTPException) as ctx:
-            rec.confirm_recovery(RecoveryConfirm(code="ZZZZZZ", new_master_password="NewMaster1!"))
+            rec.confirm_recovery(SimpleNamespace(client=None), RecoveryConfirm(code="ZZZZZZ", new_master_password="NewMaster1!"))
         self.assertEqual(ctx.exception.status_code, 400)
         self.assertEqual(self._get_setting("master_password_hash"), "H:old")
 
