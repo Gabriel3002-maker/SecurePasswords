@@ -30,6 +30,9 @@ ENCRYPTION_KEY=$ENCRYPTION_KEY
 # App
 APP_NAME=Gestor de Contraseñas
 DEBUG=True
+
+# Redis (opcional): rate limit compartido entre workers
+REDIS_URL=redis://localhost:6379/0
 EOF
     
     echo "✅ Archivo .env creado con claves seguras"

@@ -22,16 +22,17 @@ def run_setup(
             raise ValueError("Contraseña maestra: " + master_msg)
 
     # Check if already configured via the app's own DB
-    from config import get_settings
-    settings = get_settings()
+    admin_exists = False
     try:
         db = SessionLocal()
-        admin_exists = db.query(User).filter(User.role == UserRole.ADMIN).first() is not None
-        db.close()
-        if admin_exists:
-            raise ValueError("El sistema ya está configurado")
+        try:
+            admin_exists = db.query(User).filter(User.role == UserRole.ADMIN).first() is not None
+        finally:
+            db.close()
     except Exception:
         pass
+    if admin_exists:
+        raise ValueError("El sistema ya está configurado")
 
     # Create tables and admin user using the app's own engine
     Base.metadata.create_all(bind=engine)

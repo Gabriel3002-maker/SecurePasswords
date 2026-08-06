@@ -3,12 +3,20 @@ from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from config import get_settings
+import hashlib
+import hmac
 import re
 
 settings = get_settings()
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def get_duplicate_hash(password: str) -> str:
+    """Hash con HMAC-SHA256 (clave del servidor) para detectar contraseñas
+    duplicadas sin almacenar un hash sin sal recuperable."""
+    return hmac.new(settings.secret_key.encode(), password.encode(), hashlib.sha256).hexdigest()
 
 
 def validate_password_requirements(password: str) -> tuple[bool, str]:

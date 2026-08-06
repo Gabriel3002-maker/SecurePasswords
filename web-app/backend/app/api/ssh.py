@@ -4,11 +4,39 @@ from database import get_db
 from models.models import User, Credential, SSHSession, CredentialPermission
 from schemas.schemas import SSHConnectionRequest, SSHConnectionResponse
 from api.deps import get_current_user
+from core.security import decode_token
 from core.ssh_manager import SSHManager
 from datetime import datetime
+from typing import Optional
 import uuid
 
 router = APIRouter(prefix="/ssh", tags=["SSH"])
+
+
+def _get_ws_user(websocket: WebSocket) -> Optional[User]:
+    """Autentica el WebSocket usando el token de la cookie (misma política que la API)."""
+    token = websocket.cookies.get("access_token")
+    if not token:
+        return None
+    if token.startswith("Bearer "):
+        token = token.split(" ")[1]
+
+    payload = decode_token(token)
+    if not payload:
+        return None
+
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+
+    db = next(get_db())
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if user is None or not user.is_active:
+            return None
+        return user
+    finally:
+        db.close()
 
 @router.post("/connect", response_model=SSHConnectionResponse)
 async def connect_ssh(
@@ -63,7 +91,29 @@ async def connect_ssh(
 
 @router.websocket("/terminal/{session_id}")
 async def ssh_terminal(websocket: WebSocket, session_id: str):
-    """WebSocket para terminal SSH interactivo (multi-sesión)."""
+    """WebSocket para terminal SSH interactivo (multi-sesión).
+
+    Autentica al usuario con su cookie de sesión y verifica que la sesión
+    SSH le pertenezca antes de abrir la terminal.
+    """
+    user = _get_ws_user(websocket)
+    if user is None:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="No autenticado")
+        return
+
+    db = next(get_db())
+    try:
+        session = db.query(SSHSession).filter(
+            SSHSession.id == session_id,
+            SSHSession.user_id == user.id,
+        ).first()
+    finally:
+        db.close()
+
+    if not session or not session.is_active:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Sesión no válida")
+        return
+
     await SSHManager.handle_ws(websocket, session_id)
 
 @router.post("/disconnect/{session_id}", status_code=status.HTTP_204_NO_CONTENT)

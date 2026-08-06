@@ -3,17 +3,17 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, func
 from typing import List, Optional
 from datetime import datetime
-import hashlib
 import json
 from database import get_db
 from models.models import User, Credential, CredentialPermission, UserRole, Tag, AuditLog, credential_tags
 from schemas.schemas import (
     CredentialCreate, CredentialUpdate, CredentialResponse, 
     CredentialWithPassword, PermissionCreate, PermissionResponse,
-    TagCreate, TagResponse, AuditLogResponse, GeneratePasswordRequest
+    TagCreate, TagResponse, AuditLogResponse, GeneratePasswordRequest, GeneratePasswordResponse
 )
 from api.deps import get_current_user, get_current_admin
 from core.encryption import encrypt_password, decrypt_password
+from core.security import get_duplicate_hash
 
 def _log_audit(db: Session, user_id: str, action: str, resource_type: str, resource_id: str, details: dict = None, ip: str = ""):
     log = AuditLog(
@@ -226,7 +226,7 @@ def create_credential(
     """Crear nueva credencial"""
     password_encrypted = encrypt_password(credential_data.password)
     token_encrypted = encrypt_password(credential_data.token) if credential_data.token else None
-    password_hash = hashlib.sha256(credential_data.password.encode()).hexdigest()
+    password_hash = get_duplicate_hash(credential_data.password)
     
     credential = Credential(
         host=credential_data.host,
@@ -312,7 +312,14 @@ def global_audit(
     current_user: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
-    return db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(100).all()
+    return (
+        db.query(AuditLog)
+        .join(User, AuditLog.user_id == User.id)
+        .filter(User.organization_id == current_user.organization_id)
+        .order_by(AuditLog.timestamp.desc())
+        .limit(100)
+        .all()
+    )
 
 
 # ─── Duplicate & Weak Password Detection ────────────────────────
@@ -374,17 +381,34 @@ def find_weak(
 
 # ─── Password Generator ─────────────────────────────────────────
 
-@router.post("/generate-password")
-def generate_password(data: GeneratePasswordRequest):
-    import random, string
-    chars = ""
-    if data.uppercase: chars += string.ascii_uppercase
-    if data.lowercase: chars += string.ascii_lowercase
-    if data.numbers: chars += string.digits
-    if data.symbols: chars += "!@#$%^&*()_+-=[]{}|;:,.<>?"
-    if not chars: chars = string.ascii_letters + string.digits
-    password = "".join(random.choice(chars) for _ in range(data.length))
-    return {"password": password}
+@router.post("/generate-password", response_model=GeneratePasswordResponse)
+def generate_password(
+    data: GeneratePasswordRequest,
+    current_user: User = Depends(get_current_user),
+):
+    import secrets, string
+
+    grupos = []
+    if data.uppercase: grupos.append(string.ascii_uppercase)
+    if data.lowercase: grupos.append(string.ascii_lowercase)
+    if data.numbers:   grupos.append(string.digits)
+    if data.symbols:   grupos.append("!@#$%^&*()_+-=[]{}|;:,.<>?")
+    if not grupos:     grupos = [string.ascii_letters, string.digits]
+
+    alfabeto = "".join(grupos)
+    if data.length < len(grupos):
+        raise HTTPException(
+            status_code=400,
+            detail=f"La longitud mínima para los tipos elegidos es {len(grupos)}.",
+        )
+
+    # Un carácter de cada clase pedida + el resto del alfabeto completo.
+    chars = [secrets.choice(g) for g in grupos]
+    chars += [secrets.choice(alfabeto) for _ in range(data.length - len(grupos))]
+
+    # Barajado criptográficamente seguro (random.shuffle reintroduciría la debilidad).
+    secrets.SystemRandom().shuffle(chars)
+    return {"password": "".join(chars)}
 
 
 # ─── Credential-by-ID Routes (must come after static routes) ───
@@ -451,7 +475,7 @@ def update_credential(
     if "password" in update_data and update_data["password"]:
         pwd = update_data.pop("password")
         update_data["password_encrypted"] = encrypt_password(pwd)
-        update_data["password_hash"] = hashlib.sha256(pwd.encode()).hexdigest()
+        update_data["password_hash"] = get_duplicate_hash(pwd)
         changes["password"] = "actualizada"
 
     if "token" in update_data and update_data["token"]:
@@ -575,7 +599,10 @@ def grant_permission(
     db: Session = Depends(get_db)
 ):
     """Asignar permiso a un usuario (solo admin)"""
-    credential = db.query(Credential).filter(Credential.id == credential_id).first()
+    credential = db.query(Credential).filter(
+        Credential.id == credential_id,
+        Credential.organization_id == current_user.organization_id,
+    ).first()
     
     if not credential:
         raise HTTPException(
@@ -628,6 +655,16 @@ def list_permissions(
     db: Session = Depends(get_db)
 ):
     """Listar permisos de una credencial (solo admin)"""
+    credential = db.query(Credential).filter(
+        Credential.id == credential_id,
+        Credential.organization_id == current_user.organization_id,
+    ).first()
+    if not credential:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Credencial no encontrada",
+        )
+
     permissions = db.query(CredentialPermission).filter(
         CredentialPermission.credential_id == credential_id
     ).all()
@@ -643,6 +680,16 @@ def revoke_permission(
     db: Session = Depends(get_db)
 ):
     """Revocar permiso de un usuario (solo admin)"""
+    credential = db.query(Credential).filter(
+        Credential.id == credential_id,
+        Credential.organization_id == current_user.organization_id,
+    ).first()
+    if not credential:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Credencial no encontrada",
+        )
+
     permission = db.query(CredentialPermission).filter(
         CredentialPermission.credential_id == credential_id,
         CredentialPermission.user_id == user_id

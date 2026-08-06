@@ -3,11 +3,12 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import secrets
-import time
+import math
 
 from database import SessionLocal
 from models.models import RecoveryCode, SystemSetting
 from core.security import get_password_hash, verify_password, validate_password_requirements
+from core.rate_limit import RateLimiter
 from core import telegram
 
 router = APIRouter(prefix="/recovery", tags=["Recovery"])
@@ -17,8 +18,8 @@ CODE_TTL_MINUTES = 10
 MAX_RECOVERY_ATTEMPTS = 5
 RECOVERY_LOCKOUT_MINUTES = 15
 
-# Rate limiting: {ip_address: {"attempts": int, "last_attempt": timestamp}}
-_RECOVERY_ATTEMPTS: dict[str, dict] = {}
+# Rate limiting compartido entre workers (Redis con fallback en memoria)
+_recovery_limiter = RateLimiter("recovery:ip", MAX_RECOVERY_ATTEMPTS, RECOVERY_LOCKOUT_MINUTES * 60)
 
 
 class RecoveryRequest(BaseModel):
@@ -36,34 +37,18 @@ def _generate_code() -> str:
 
 def _check_recovery_rate_limit(ip: str) -> None:
     """Verificar si el IP excedió intentos de recuperación."""
-    now = time.time()
-    attempt_data = _RECOVERY_ATTEMPTS.get(ip, {})
-
-    # Si el último intento fue hace más de RECOVERY_LOCKOUT_MINUTES, resetear
-    if attempt_data.get("last_attempt", 0) + (RECOVERY_LOCKOUT_MINUTES * 60) < now:
-        _RECOVERY_ATTEMPTS.pop(ip, None)
-        return
-
-    if attempt_data.get("attempts", 0) >= MAX_RECOVERY_ATTEMPTS:
+    remaining = _recovery_limiter.remaining_lockout(ip)
+    if remaining:
+        minutos = max(1, math.ceil(remaining / 60))
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Demasiados intentos. Intenta de nuevo en {RECOVERY_LOCKOUT_MINUTES} minutos."
+            detail=f"Demasiados intentos. Intenta de nuevo en {minutos} minutos."
         )
 
 
 def _record_recovery_attempt(ip: str, success: bool) -> None:
     """Registrar intento de recuperación."""
-    now = time.time()
-    if ip not in _RECOVERY_ATTEMPTS:
-        _RECOVERY_ATTEMPTS[ip] = {"attempts": 0, "last_attempt": now}
-
-    _RECOVERY_ATTEMPTS[ip]["last_attempt"] = now
-
-    if not success:
-        _RECOVERY_ATTEMPTS[ip]["attempts"] = _RECOVERY_ATTEMPTS[ip].get("attempts", 0) + 1
-    else:
-        # Limpiar intentos fallidos después de éxito
-        _RECOVERY_ATTEMPTS.pop(ip, None)
+    _recovery_limiter.record(ip, success)
 
 
 @router.post("/request")
