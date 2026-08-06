@@ -75,7 +75,6 @@ class CredentialResponse(CredentialBase):
     is_deleted: bool = False
     deleted_at: Optional[datetime] = None
     user_permissions: Optional[dict] = None
-    password_hash: Optional[str] = None  # SHA-256 para detección de duplicados
     
     class Config:
         from_attributes = True

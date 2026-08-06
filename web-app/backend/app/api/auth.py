@@ -2,13 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from fastapi import Header
 from sqlalchemy.orm import Session
 from database import get_db
-from models.models import User
+from models.models import User, UserRole
 from schemas.schemas import UserCreate, UserLogin, Token, UserResponse, ChangePasswordRequest
 from services.auth_service import register_user, authenticate_user, create_user_token
 from config import get_settings
-from api.deps import get_current_user
+from api.deps import get_current_user, get_current_admin
 from core.security import get_password_hash, verify_password, validate_password_requirements
+from core.rate_limit import RateLimiter
 import secrets
+import math
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,23 +18,31 @@ settings = get_settings()
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-_INVALID_ATTEMPTS: dict[str, int] = {}
 MAX_LOGIN_ATTEMPTS = 5
+MAX_IP_ATTEMPTS = 20
+LOGIN_LOCKOUT_MINUTES = 15
 
-def _check_rate_limit(email: str) -> None:
-    attempts = _INVALID_ATTEMPTS.get(email, 0)
-    if attempts >= MAX_LOGIN_ATTEMPTS:
+email_limiter = RateLimiter("login:email", MAX_LOGIN_ATTEMPTS, LOGIN_LOCKOUT_MINUTES * 60)
+ip_limiter = RateLimiter("login:ip", MAX_IP_ATTEMPTS, LOGIN_LOCKOUT_MINUTES * 60)
+
+
+def _raise_rate_limited(remaining_seconds: int) -> None:
+    minutos = max(1, math.ceil(remaining_seconds / 60))
+    raise HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        detail=f"Demasiados intentos. Intenta de nuevo en {minutos} minutos.",
+    )
+
+
+def _check_rate_limit(email: str, ip: str) -> None:
+    remaining = email_limiter.remaining_lockout(email)
+    if remaining:
         logger.warning("Rate limit excedido para %s", email)
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Demasiados intentos. Intenta de nuevo en 15 minutos."
-        )
-
-def _record_attempt(email: str, success: bool) -> None:
-    if success:
-        _INVALID_ATTEMPTS.pop(email, None)
-    else:
-        _INVALID_ATTEMPTS[email] = _INVALID_ATTEMPTS.get(email, 0) + 1
+        _raise_rate_limited(remaining)
+    remaining = ip_limiter.remaining_lockout(ip)
+    if remaining:
+        logger.warning("Rate limit excedido para IP %s", ip)
+        _raise_rate_limited(remaining)
 
 def _set_auth_cookie(response: Response, access_token: str) -> None:
     response.set_cookie(
@@ -58,8 +68,14 @@ def _set_csrf_cookie(response: Response) -> str:
     return token
 
 @router.post("/register", response_model=UserResponse)
-def register(user_data: UserCreate, db: Session = Depends(get_db)):
-    """Registrar nuevo usuario"""
+def register(
+    user_data: UserCreate,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Registrar nuevo usuario (solo admin, siempre como usuario normal de su organización)"""
+    user_data.organization_id = current_admin.organization_id
+    user_data.role = UserRole.USER
     try:
         return register_user(db, user_data)
     except ValueError as exc:
@@ -71,11 +87,13 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 def login(response: Response, request: Request, credentials: UserLogin, db: Session = Depends(get_db)):
     """Iniciar sesión"""
-    _check_rate_limit(credentials.email)
+    ip = request.client.host if request.client else "unknown"
+    _check_rate_limit(credentials.email, ip)
 
     user = db.query(User).filter(User.email == credentials.email).first()
     is_valid, error = authenticate_user(user, credentials.password)
-    _record_attempt(credentials.email, is_valid)
+    email_limiter.record(credentials.email, is_valid)
+    ip_limiter.record(ip, is_valid)
 
     if not is_valid:
         if error == "Usuario inactivo":
