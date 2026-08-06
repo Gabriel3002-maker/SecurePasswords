@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     encryption_key: str = "setup_mode_key"
     app_name: str = "Gestor de Contraseñas"
     debug: bool = False
+    cookie_secure: bool = False
     redis_url: str = ""
 
     class Config:

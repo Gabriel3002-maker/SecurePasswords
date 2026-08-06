@@ -50,9 +50,8 @@ def _set_auth_cookie(response: Response, access_token: str) -> None:
         value=f"Bearer {access_token}",
         httponly=True,
         max_age=settings.access_token_expire_minutes * 60,
-        expires=settings.access_token_expire_minutes * 60,
         samesite="lax",
-        secure=not settings.debug,
+        secure=settings.cookie_secure,
     )
 
 def _set_csrf_cookie(response: Response) -> str:
@@ -63,7 +62,7 @@ def _set_csrf_cookie(response: Response) -> str:
         httponly=True,
         max_age=3600,
         samesite="lax",
-        secure=not settings.debug,
+        secure=settings.cookie_secure,
     )
     return token
 

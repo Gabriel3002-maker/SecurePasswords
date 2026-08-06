@@ -34,6 +34,7 @@ Abre **http://localhost:9000**. El asistente de configuración guía los primero
 | `SECRET_KEY` | Sí | Clave secreta para JWT |
 | `ENCRYPTION_KEY` | Sí | Clave para encriptar credenciales |
 | `DATABASE_URL` | Sí | Ruta de la BD SQLite |
+| `COOKIE_SECURE` | No | `True` solo si sirves la app por HTTPS. En HTTP plano debe ser `False` (por defecto), o el navegador descarta las cookies de sesión y el login vuelve a la pantalla de inicio. |
 | `TELEGRAM_BOT_TOKEN` | No | Token del bot (también configurable en el wizard) |
 
 ## Instalación sin Docker
